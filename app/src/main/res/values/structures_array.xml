@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string-array name="hiphop">
+        <item>[Intro]</item>
+        <item>[Hook]</item>
+        <item>[Verse 1]</item>
+        <item>[Hook]</item>
+        <item>[Verse 2]</item>
+        <item>[Hook]</item>
+        <item>[Outro]</item>
+    </string-array>
+    <string-array name="trap">
+        <item>[Hook]</item>
+        <item>[Verse 1]</item>
+        <item>[Hook]</item>
+        <item>[Verse 2]</item>
+    </string-array>
+</resources>

@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="colorPrimary">#82D173</color>
+    <color name="colorPrimaryDark">#47733F</color>
+    <color name="colorAccent">#593E56</color>
+    <color name="softBrown">#C5AFA4</color>
+    <color name="fondo">#FAEDCA</color>
+    <color name="prueba">#260C1A</color>
+</resources>
