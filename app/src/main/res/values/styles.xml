@@ -6,7 +6,9 @@
         <item name="colorPrimary">@color/colorPrimary</item>
         <item name="colorPrimaryDark">@color/colorPrimaryDark</item>
         <item name="colorAccent">@color/colorAccent</item>
-        <item name="android:colorBackground">@color/fondo</item>
+        <item name="android:colorBackground">@android:color/white</item>
+        <item name="cardViewStyle">@style/AppTheme</item>
+        <item name="coordinatorLayoutStyle">@style/AppTheme</item>
         <!--<item name="android:fontFamily">@font/beautiful_people</item> !-->
     </style>
 
@@ -17,5 +19,13 @@
 
     <style name="fuente_notas.bold">
         <item name="android:textStyle">bold</item>
+    </style>
+
+    <style name="LoginAndSignup" parent="Theme.AppCompat.Light.NoActionBar">
+        <item name="colorPrimary">@color/colorPrimary</item>
+        <item name="colorPrimaryDark">@color/colorPrimary</item>
+        <item name="colorAccent">@android:color/black</item>
+        <item name="android:colorBackground">@color/colorAccent</item>
+        <item name="android:foregroundTint">@android:color/black</item>
     </style>
 </resources>

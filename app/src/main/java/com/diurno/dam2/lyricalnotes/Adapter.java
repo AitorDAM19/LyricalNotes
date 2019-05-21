@@ -3,18 +3,12 @@ package com.diurno.dam2.lyricalnotes;
 import android.content.Context;
 import android.content.Intent;
 import android.support.annotation.NonNull;
-import android.support.constraint.ConstraintLayout;
-import android.support.v4.app.Fragment;
-import android.support.v4.view.MotionEventCompat;
+import android.support.v7.widget.CardView;
 import android.support.v7.widget.RecyclerView;
-import android.support.v7.widget.helper.ItemTouchHelper;
 import android.view.LayoutInflater;
-import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.EditText;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import java.util.List;
 
@@ -29,7 +23,7 @@ public class Adapter extends RecyclerView.Adapter<NotaViewHolder>  {
     @NonNull
     @Override
     public NotaViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-        View view = LayoutInflater.from(parent.getContext()).inflate(R.layout.notes_container, parent, false);
+        View view = LayoutInflater.from(parent.getContext()).inflate(R.layout.layout_notas, parent, false);
         return new NotaViewHolder(view);
     }
 
@@ -65,13 +59,13 @@ public class Adapter extends RecyclerView.Adapter<NotaViewHolder>  {
 class NotaViewHolder extends RecyclerView.ViewHolder {
     TextView txtTitulo;
     TextView txtContenido;
-    ConstraintLayout layout;
+    CardView layout;
 
     NotaViewHolder (View itemView) {
         super(itemView);
-        txtTitulo = itemView.findViewById(R.id.txtTitulo);
-        txtContenido = itemView.findViewById(R.id.txtContenido);
-        layout = itemView.findViewById(R.id.containerConstraint);
+        txtTitulo = itemView.findViewById(R.id.titulo);
+        txtContenido = itemView.findViewById(R.id.contenido);
+        layout = itemView.findViewById(R.id.card_view);
     }
 
 

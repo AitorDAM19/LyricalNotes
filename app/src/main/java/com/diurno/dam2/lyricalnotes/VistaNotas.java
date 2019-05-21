@@ -23,6 +23,7 @@ import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.DividerItemDecoration;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
+import android.support.v7.widget.StaggeredGridLayoutManager;
 import android.support.v7.widget.Toolbar;
 import android.support.v7.widget.helper.ItemTouchHelper;
 import android.view.Display;
@@ -32,8 +33,13 @@ import android.view.View;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
+
 import java.io.BufferedReader;
 import java.io.File;
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
@@ -57,8 +63,10 @@ public class VistaNotas extends AppCompatActivity {
         idUsuario = bundle.getInt("id");
         recyclerView = findViewById(R.id.recyclerView);
         LinearLayoutManager linearLayoutManager = new LinearLayoutManager(VistaNotas.this, LinearLayoutManager.VERTICAL, false);
-        recyclerView.addItemDecoration(new DividerItemDecoration(VistaNotas.this, DividerItemDecoration.VERTICAL));
-        recyclerView.setLayoutManager(linearLayoutManager);
+        StaggeredGridLayoutManager staggeredGridLayoutManager = new StaggeredGridLayoutManager(3, 1);
+        recyclerView.setLayoutManager(staggeredGridLayoutManager);
+        //recyclerView.addItemDecoration(new DividerItemDecoration(VistaNotas.this, DividerItemDecoration.VERTICAL));
+        //recyclerView.setLayoutManager(linearLayoutManager);
         listaNotas = new ArrayList<>();
         Adapter adapter = new Adapter(VistaNotas.this, listaNotas);
         recyclerView.setAdapter(adapter);
@@ -190,36 +198,50 @@ public class VistaNotas extends AppCompatActivity {
 
     public void iniciar() {
         final int seleccionado = 0;
-
-        String name = getResources().getResourceName(R.array.hiphop);
-        String name2 = getResources().getResourceName(R.array.trap);
-        String[] generos = {name, name2};
-        final String[] hiphop = getResources().getStringArray(R.array.hiphop);
-        final String[] trap = getResources().getStringArray(R.array.trap);
-        String[][] listaGeneros = {hiphop, trap};
-        //listaGeneros.add(hiphop);
-        //listaGeneros.add(trap);
+        InputStream is =  getResources().openRawResource(R.raw.structures);
+        BufferedReader br = new BufferedReader(new InputStreamReader(is));
+        StringBuilder sb = new StringBuilder();
+        String resultado = null;
+        String line = null;
+        List<String> listaNombreGeneros = new ArrayList<>();
+        final ArrayList<String[]> listaItems = new ArrayList<>();
+        try {
+            while ((line = br.readLine()) != null) {
+                sb.append(line + "\n");
+            }
+            resultado = sb.toString();
+            JSONObject jsonObject = new JSONObject(resultado);
+            JSONArray structures = jsonObject.getJSONArray("structures");
+            for (int i = 0; i < structures.length(); i++) {
+                JSONObject estructura = structures.getJSONObject(i);
+                String genero = estructura.getString("genero");
+                String itemsString = estructura.getString("items");
+                //itemsString = itemsString.replaceAll(" ", "");
+                String[] items2 = itemsString.split(",");
+                listaNombreGeneros.add(genero);
+                listaItems.add(items2);
+                System.out.println(genero + " - " + itemsString);
+            }
+        } catch (IOException | JSONException e) {
+            e.printStackTrace();
+        }
+        CharSequence[] generos = listaNombreGeneros.toArray(new CharSequence[listaNombreGeneros.size()]);
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
         builder.setTitle("Prueba")
-                .setPositiveButton("Aceptar", new DialogInterface.OnClickListener() {
-                    @Override
-                    public void onClick(DialogInterface dialog, int which) {
-                        Intent intent = new Intent(VistaNotas.this, CrearNota.class);
-                        intent.putExtra("genre", hiphop);
-                        intent.putExtra("idUsu", idUsuario);
-                        startActivity(intent);
-                    }
-                })
                 .setNegativeButton("Cancelar", new DialogInterface.OnClickListener() {
                     @Override
                     public void onClick(DialogInterface dialog, int which) {
 
                     }
                 })
-                .setItems(hiphop, new DialogInterface.OnClickListener() {
+                .setItems(generos, new DialogInterface.OnClickListener() {
                     @Override
                     public void onClick(DialogInterface dialog, int which) {
-                        generoSeleccionado = which;
+                        System.out.println("Seleccionado: " + which);
+                        Intent intent = new Intent(VistaNotas.this, CrearNota.class);
+                        intent.putExtra("genre", listaItems.get(which));
+                        intent.putExtra("idUsu", idUsuario);
+                        startActivity(intent);
                     }
                 })
                 .create().show();

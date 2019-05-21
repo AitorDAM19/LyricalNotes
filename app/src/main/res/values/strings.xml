@@ -7,4 +7,5 @@
     <string name="guardar_nota">Guardar nota</string>
     <string name="nombre">Nombre</string>
     <string name="borrar_nota">Borrar nota</string>
+    <string name="buscar_rima">Buscar rima</string>
 </resources>

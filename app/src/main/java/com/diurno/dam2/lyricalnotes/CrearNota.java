@@ -33,7 +33,7 @@ public class CrearNota extends AppCompatActivity {
         setContentView(R.layout.layout_crear_nota);
         etxtTitulo = findViewById(R.id.etxtTitulo);
         etxtContenido = findViewById(R.id.etxtContenido);
-
+        etxtContenido.setCustomSelectionActionModeCallback(new ListenerTexto(etxtContenido, CrearNota.this));
         editar  = false;
         Bundle bundle = getIntent().getExtras();
 
@@ -48,12 +48,18 @@ public class CrearNota extends AppCompatActivity {
         String[] genre = bundle.getStringArray("genre");
         if (genre != null) {
             System.out.println(genre.length);
+            String cadenaNegrita = null;
+            StringBuilder sb = new StringBuilder();
             for (int i = 0; i < genre.length; i++) {
-                SpannableString str = new SpannableString(genre[i]);
-                str.setSpan(new StyleSpan(Typeface.BOLD), 0, genre[i].length(), Spanned.SPAN_INCLUSIVE_EXCLUSIVE);
-                String cadenaBold = "<b>" + genre[i] + "</b>";
-                etxtContenido.append(str + "\n\n");
+                //String cadenaBold = "<b>" + genre[i] + "</b>";
+                sb.append("<b>" + genre[i] + "</b>");
+                sb.append("<br/>");
+                sb.append("<br/>");
+                //etxtContenido.append(Html.fromHtml(cadenaBold) + "\n\n");
             }
+            cadenaNegrita = sb.toString();
+            System.out.println(cadenaNegrita);
+            etxtContenido.setText(Html.fromHtml(cadenaNegrita));
         }
     }
 

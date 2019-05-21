@@ -20,6 +20,7 @@
         android:layout_marginTop="8dp"
         android:text="@string/usuario"
         android:textSize="18sp"
+        android:gravity="center_horizontal"
         android:textStyle="bold"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
