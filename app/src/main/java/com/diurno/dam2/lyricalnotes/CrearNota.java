@@ -24,6 +24,7 @@ import java.util.List;
 public class CrearNota extends AppCompatActivity {
     private int idNota;
     private int idUsuario;
+    private String UID;
     private EditText etxtTitulo;
     private EditText etxtContenido;
     private boolean editar;
@@ -37,7 +38,8 @@ public class CrearNota extends AppCompatActivity {
         editar  = false;
         Bundle bundle = getIntent().getExtras();
 
-        idUsuario = bundle.getInt("idUsu");
+        //idUsuario = bundle.getInt("idUsu");
+        UID = bundle.getString("uid");
         idNota = bundle.getInt("idNota");
         idUsuario = bundle.getInt("idUsu");
         etxtTitulo.setText(bundle.getString("Titulo"));
@@ -74,7 +76,10 @@ public class CrearNota extends AppCompatActivity {
      */
     public void guardar() {
         UsersDatabase db = new UsersDatabase(CrearNota.this);
-        db.guardarNota(idUsuario, etxtTitulo.getText().toString(), etxtContenido.getText().toString());
+        String titulo =  etxtTitulo.getText().toString();
+        String contenido = etxtContenido.getText().toString();
+        //db.guardarNota(idUsuario,titulo, contenido);
+        db.guardarNotaUID(UID, titulo, contenido);
         Toast.makeText(this, "Nota guardada.", Toast.LENGTH_SHORT).show();
         finish();
     }

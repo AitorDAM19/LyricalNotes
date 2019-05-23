@@ -11,26 +11,35 @@ import android.util.Log;
 import java.util.ArrayList;
 
 public class UsersDatabase extends SQLiteOpenHelper {
-
+    private static int dbVersion = 1;
     public UsersDatabase(Context contexto) {
-        super(contexto, "BDUSUARIO", null, 1);
+        super(contexto, "BDUSUARIO", null, dbVersion);
     }
 
     @Override
     public void onCreate(SQLiteDatabase db) {
         String orden="CREATE TABLE Usuario(idUsuario integer primary key, nombre text, password text)";
+        String ordenUID = "CREATE TABLE UsuarioUID(idUsuario text primary key)";
         String orden2 = "CREATE TABLE Nota(idNota integer primary key, titulo text, contenido text)";
         String orden3 = "CREATE TABLE Usuario_Nota(idUsuario integer , idNota integer, PRIMARY KEY (idUsuario, idNota), CONSTRAINT fk_idusu FOREIGN KEY (idUsuario) REFERENCES Usuario(idUsuario), CONSTRAINT fk_idnota FOREIGN KEY (idNota) REFERENCES Nota(idNota))";
+        String orden4 = "CREATE TABLE Usuario_Nota_UID(idUsuario text , idNota integer, PRIMARY KEY (idUsuario, idNota), CONSTRAINT fk_idusu FOREIGN KEY (idUsuario) REFERENCES UsuarioUID(idUsuario), CONSTRAINT fk_idnota FOREIGN KEY (idNota) REFERENCES Nota(idNota))";
+
         db.execSQL(orden);
         db.execSQL(orden2);
         db.execSQL(orden3);
+        db.execSQL(ordenUID);
+        db.execSQL(orden4);
         Log.d("USUARIO", orden);
         Log.d("NOTA", orden2);
         Log.d("USUARIO_NOTA", orden3);
     }
 
     @Override
-    public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) { }
+    public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
+        if (newVersion > oldVersion) {
+            dbVersion++;
+        }
+    }
 
     public ArrayList<Usuario> listaUsuarios() {
         ArrayList<Usuario> lista = new ArrayList<Usuario>();
@@ -51,11 +60,36 @@ public class UsersDatabase extends SQLiteOpenHelper {
         return lista;
     }
 
+    public ArrayList<UserUID> listaUsuariosUID() {
+        ArrayList<UserUID> lista = new ArrayList<>();
+        SQLiteDatabase db = getReadableDatabase();
+        String consulta = "SELECT idUsuario FROM Usuario ORDER by id";
+        Log.d("USUARIO", consulta);
+        Cursor cursor = db.rawQuery(consulta, null);
+        UserUID user;
+        while(cursor.moveToNext()) {
+            user = new UserUID();
+            user.setUID(cursor.getString(0));
+            lista.add(user);
+        }
+        cursor.close();
+        db.close();
+        return lista;
+    }
+
     public void guardarUsuario(String nombre, String password){
         SQLiteDatabase db = getWritableDatabase();
         int idUsuario = (int) cuantosUsuarios();
         idUsuario += 1;
         String orden="INSERT into Usuario values("+idUsuario+",'"+nombre+"','"+password+"')";
+        db.execSQL(orden);
+        Log.d("COCHE", orden);
+        db.close();
+    }
+
+    public void guardarUsuarioUID(String UID){
+        SQLiteDatabase db = getWritableDatabase();
+        String orden="INSERT into UsuarioUID values('"+UID+"')";
         db.execSQL(orden);
         Log.d("COCHE", orden);
         db.close();
@@ -71,6 +105,15 @@ public class UsersDatabase extends SQLiteOpenHelper {
         db.close();
     }
 
+    public void guardarNotaUID(String idUsuario, String titulo, String contenido) {
+        SQLiteDatabase db = getWritableDatabase();
+        int idNota = (int) cuantasNotas() + 1;
+        String orden = "INSERT into Nota values ("+idNota+",'"+titulo+"','"+contenido+"')";
+        String orden2 = "INSERT into Usuario_Nota_UID values ('"+idUsuario+"',"+idNota+")";
+        db.execSQL(orden);
+        db.execSQL(orden2);
+        db.close();
+    }
     public ArrayList<Nota> obtenerNotas(int idUsuario) {
         SQLiteDatabase db = getReadableDatabase();
         ArrayList<Nota> listaNotas = new ArrayList<>();
@@ -80,6 +123,20 @@ public class UsersDatabase extends SQLiteOpenHelper {
                 Nota nota = new Nota(cursor.getInt(0), cursor.getString(1), cursor.getString(2));
                 listaNotas.add(nota);
             }
+        db.close();
+        return listaNotas;
+    }
+
+    public ArrayList<Nota> obtenerNotasUID(String idUsuario) {
+        System.out.println("UID: " + idUsuario);
+        SQLiteDatabase db = getReadableDatabase();
+        ArrayList<Nota> listaNotas = new ArrayList<>();
+        String orden = "SELECT idNota, titulo, contenido FROM Nota WHERE idNota IN (SELECT idNota FROM Usuario_Nota_UID WHERE idUsuario = '"+idUsuario+"')";
+        Cursor cursor = db.rawQuery(orden, null);
+        while (cursor.moveToNext()) {
+            Nota nota = new Nota(cursor.getInt(0), cursor.getString(1), cursor.getString(2));
+            listaNotas.add(nota);
+        }
         db.close();
         return listaNotas;
     }
@@ -95,6 +152,14 @@ public class UsersDatabase extends SQLiteOpenHelper {
         SQLiteDatabase db = getWritableDatabase();
         String orden = "DELETE FROM Nota WHERE idNota = "+idNota+"";
         String orden2 = "DELETE FROM Usuario_Nota where idNota = "+idNota+"";
+        db.execSQL(orden);
+        db.execSQL(orden2);
+    }
+
+    public void borrarNotaUID(int idNota) {
+        SQLiteDatabase db = getWritableDatabase();
+        String orden = "DELETE FROM Nota WHERE idNota = "+idNota+"";
+        String orden2 = "DELETE FROM Usuario_Nota_UID where idNota = "+idNota+"";
         db.execSQL(orden);
         db.execSQL(orden2);
     }
@@ -132,9 +197,42 @@ public class UsersDatabase extends SQLiteOpenHelper {
 
     }
 
+    public boolean buscarUsuarioUID(String UID) {
+        SQLiteDatabase db = getReadableDatabase();
+        String orden = "SELECT idUsuario FROM UsuarioUID WHERE nombre = '" + UID + "'";
+        Cursor cursor = db.rawQuery(orden, null);
+        if (cursor.getCount() == 1) {
+            cursor.close();
+            db.close();
+            return true;
+        }
+        else {
+            cursor.close();
+            db.close();
+            return false;
+        }
+
+    }
+
     public boolean existeUsuario(String nombre) {
         SQLiteDatabase db = getReadableDatabase();
         String orden = "SELECT nombre FROM Usuario WHERE nombre = '" + nombre + "'";
+        Cursor cursor = db.rawQuery(orden, null);
+        if (cursor.getCount() == 1) {
+            cursor.close();
+            db.close();
+            return true;
+        }
+        else {
+            cursor.close();
+            db.close();
+            return false;
+        }
+    }
+
+    public boolean existeUsuarioUID(String UID) {
+        SQLiteDatabase db = getReadableDatabase();
+        String orden = "SELECT idUsuario FROM UsuarioUID WHERE idUsuario = '" + UID + "'";
         Cursor cursor = db.rawQuery(orden, null);
         if (cursor.getCount() == 1) {
             cursor.close();

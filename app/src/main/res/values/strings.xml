@@ -8,4 +8,7 @@
     <string name="nombre">Nombre</string>
     <string name="borrar_nota">Borrar nota</string>
     <string name="buscar_rima">Buscar rima</string>
+    <string name="contrasena">Contraseña</string>
+    <string name="correo_electronico">Correo electrónico</string>
+    <string name="confirmar_contrasena">Confirmar contraseña</string>
 </resources>

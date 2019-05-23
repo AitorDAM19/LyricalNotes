@@ -30,17 +30,25 @@ public class Adapter extends RecyclerView.Adapter<NotaViewHolder>  {
     @Override
     public void onBindViewHolder(@NonNull final NotaViewHolder notaViewHolder, int position) {
         Nota nota = listaNotas.get(position);
+        String tituloNota = nota.getTitulo();
+        String contenidoNota = nota.getLetras();
+        System.out.println("Titulo de la nota cuando se le asigna a la tarjeta: " + tituloNota);
+        System.out.println("Contenido de la nota cuando se le asigna a la tarjeta: " + contenidoNota);
         final int idNota = nota.getIdNota();
-        notaViewHolder.txtTitulo.setText(nota.getTitulo());
-        notaViewHolder.txtContenido.setText(nota.getLetras());
+        notaViewHolder.txtTitulo.setText(tituloNota);
+        notaViewHolder.txtContenido.setText(contenidoNota);
 
         notaViewHolder.layout.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+                String titulo = notaViewHolder.txtTitulo.getText().toString();
+                String contenido = notaViewHolder.txtContenido.getText().toString();
+                System.out.println("Título de la nota al pulsar cardView: " + titulo);
+                System.out.println("Contenido de la nota al pulsar cardView: " + contenido);
                 Intent intent = new Intent(context, CrearNota.class);
                 intent.putExtra("idNota", idNota);
-                intent.putExtra("Titulo", notaViewHolder.txtTitulo.getText().toString());
-                intent.putExtra("Contenido", notaViewHolder.txtContenido.getText().toString());
+                intent.putExtra("Titulo", titulo);
+                intent.putExtra("Contenido", contenido);
                 context.startActivity(intent);
             }
         });

@@ -34,11 +34,11 @@
         app:layout_constraintTop_toBottomOf="@+id/imageView">
 
         <EditText
-            android:id="@+id/etxtEmail"
+            android:id="@+id/etxtEmailSignup"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:foregroundTint="@android:color/black"
-            android:hint="Email"
+            android:hint="@string/correo_electronico"
             android:inputType="textEmailAddress" />
     </android.support.design.widget.TextInputLayout>
 
@@ -55,7 +55,7 @@
         app:layout_constraintTop_toBottomOf="@+id/textInputLayout">
 
         <EditText
-            android:id="@+id/etxtPass"
+            android:id="@+id/etxtPassSignup"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:foregroundTint="@android:color/black"
@@ -63,29 +63,50 @@
             android:inputType="textPassword" />
     </android.support.design.widget.TextInputLayout>
 
+    <android.support.design.widget.TextInputLayout
+        android:id="@+id/confirmpass_inputlayout"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginEnd="24dp"
+
+        android:layout_marginStart="24dp"
+        android:layout_marginTop="32dp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/textInputLayout2">
+
+        <EditText
+            android:id="@+id/etxtConfirmPass"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:foregroundTint="@android:color/black"
+            android:hint="@string/confirmar_contrasena"
+            android:inputType="textPassword" />
+    </android.support.design.widget.TextInputLayout>
+
     <Button
-        android:id="@+id/btnLogin"
+        android:id="@+id/btnSignup"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginEnd="24dp"
         android:layout_marginStart="24dp"
         android:layout_marginTop="32dp"
-        android:text="Iniciar Sesión"
+        android:text="@string/registrarse"
         android:background="@drawable/custom_button"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/textInputLayout2" />
+        app:layout_constraintTop_toBottomOf="@+id/confirmpass_inputlayout" />
 
     <TextView
-        android:id="@+id/txtRegistrarse"
+        android:id="@+id/txtHasAccount"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginEnd="24dp"
         android:layout_marginStart="24dp"
         android:layout_marginTop="24dp"
-        android:text="¿No tienes una cuenta? Regístrate"
+        android:text="¿Ya tienes una cuenta? Inicia sesión"
         android:textAlignment="center"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/btnLogin" />
+        app:layout_constraintTop_toBottomOf="@+id/btnSignup" />
 </android.support.constraint.ConstraintLayout>

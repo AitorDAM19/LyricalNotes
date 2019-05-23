@@ -1,5 +1,6 @@
 package com.diurno.dam2.lyricalnotes;
 
+import android.app.Dialog;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.res.Resources;
@@ -27,11 +28,14 @@ import android.support.v7.widget.StaggeredGridLayoutManager;
 import android.support.v7.widget.Toolbar;
 import android.support.v7.widget.helper.ItemTouchHelper;
 import android.view.Display;
+import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.TextView;
 import android.widget.Toast;
+
+import com.google.firebase.auth.FirebaseAuth;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -51,8 +55,11 @@ public class VistaNotas extends AppCompatActivity {
     private RecyclerView recyclerView;
     private List<Nota> listaNotas;
     private int idUsuario;
+    private String UID;
     private Stack<Nota> stackNotas;
     private int generoSeleccionado;
+    private StaggeredGridLayoutManager staggeredGridLayoutManager;
+
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -60,13 +67,11 @@ public class VistaNotas extends AppCompatActivity {
         stackNotas = new Stack<>();
         iconoBorrar = ContextCompat.getDrawable(VistaNotas.this, R.drawable.ic_delete_white_24);
         Bundle bundle = getIntent().getExtras();
-        idUsuario = bundle.getInt("id");
+        //idUsuario = bundle.getInt("id");
+        UID = bundle.getString("id");
         recyclerView = findViewById(R.id.recyclerView);
-        LinearLayoutManager linearLayoutManager = new LinearLayoutManager(VistaNotas.this, LinearLayoutManager.VERTICAL, false);
-        StaggeredGridLayoutManager staggeredGridLayoutManager = new StaggeredGridLayoutManager(3, 1);
+        staggeredGridLayoutManager = new StaggeredGridLayoutManager(3, 1);
         recyclerView.setLayoutManager(staggeredGridLayoutManager);
-        //recyclerView.addItemDecoration(new DividerItemDecoration(VistaNotas.this, DividerItemDecoration.VERTICAL));
-        //recyclerView.setLayoutManager(linearLayoutManager);
         listaNotas = new ArrayList<>();
         Adapter adapter = new Adapter(VistaNotas.this, listaNotas);
         recyclerView.setAdapter(adapter);
@@ -100,7 +105,7 @@ public class VistaNotas extends AppCompatActivity {
                     return;
                 }
                 ColorDrawable background = new ColorDrawable();
-                background.setColor(Color.parseColor("#82D173"));
+                background.setColor(Color.parseColor("#FFFFFF"));
                 int dXint = (int) dX;
                 background.setBounds(itemView.getRight() + dXint, itemView.getTop(), itemView.getRight(), itemView.getBottom());
                 background.draw(c);
@@ -155,6 +160,7 @@ public class VistaNotas extends AppCompatActivity {
 
                 Adapter adapter = new Adapter(VistaNotas.this, listaNotas);
                 recyclerView.setAdapter(adapter);
+                recyclerView.smoothScrollBy(0, recyclerView.getHeight());
                 //cargarNotas2();
             }
         };
@@ -180,7 +186,14 @@ public class VistaNotas extends AppCompatActivity {
                 db.borrarNotas(idUsuario);
                 Adapter adapter = new Adapter(VistaNotas.this, listaNotas);
                 recyclerView.setAdapter(adapter);
+                recyclerView.smoothScrollBy(0, recyclerView.getHeight());
                 return true;
+            case R.id.logout:
+                FirebaseAuth auth = FirebaseAuth.getInstance();
+                auth.signOut();
+                Intent intent = new Intent(this, MainActivity.class);
+                startActivity(intent);
+                finish();
             default:
                 return super.onOptionsItemSelected(item);
         }
@@ -193,11 +206,12 @@ public class VistaNotas extends AppCompatActivity {
         listaNotas.clear();
         cargarNotas2();
         Adapter adapter = new Adapter(VistaNotas.this, listaNotas);
+        recyclerView.setAdapter(null);
         recyclerView.setAdapter(adapter);
+        recyclerView.smoothScrollBy(0, recyclerView.getHeight());
     }
 
     public void iniciar() {
-        final int seleccionado = 0;
         InputStream is =  getResources().openRawResource(R.raw.structures);
         BufferedReader br = new BufferedReader(new InputStreamReader(is));
         StringBuilder sb = new StringBuilder();
@@ -227,7 +241,9 @@ public class VistaNotas extends AppCompatActivity {
         }
         CharSequence[] generos = listaNombreGeneros.toArray(new CharSequence[listaNombreGeneros.size()]);
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
-        builder.setTitle("Prueba")
+        LayoutInflater layoutInflater = getLayoutInflater();
+
+        builder.setTitle("Selecciona el género")
                 .setNegativeButton("Cancelar", new DialogInterface.OnClickListener() {
                     @Override
                     public void onClick(DialogInterface dialog, int which) {
@@ -240,11 +256,14 @@ public class VistaNotas extends AppCompatActivity {
                         System.out.println("Seleccionado: " + which);
                         Intent intent = new Intent(VistaNotas.this, CrearNota.class);
                         intent.putExtra("genre", listaItems.get(which));
-                        intent.putExtra("idUsu", idUsuario);
+                        //intent.putExtra("idUsu", idUsuario);
+                        intent.putExtra("uid", UID);
                         startActivity(intent);
                     }
-                })
-                .create().show();
+                }).create().show();
+        /*Dialog dialog = builder.create();
+        dialog.getWindow().setBackgroundDrawableResource(R.drawable.dialog_background);
+        dialog.show();*/
     }
 
     /**
@@ -253,9 +272,10 @@ public class VistaNotas extends AppCompatActivity {
     private void cargarNotas2() {
         UsersDatabase db = new UsersDatabase(VistaNotas.this);
         listaNotas.clear();
-        listaNotas.addAll(db.obtenerNotas(idUsuario));
+        listaNotas.addAll(db.obtenerNotasUID(UID));
         Adapter adapter = new Adapter(VistaNotas.this, listaNotas);
         recyclerView.setAdapter(adapter);
+        recyclerView.smoothScrollBy(0, recyclerView.getHeight());
         System.out.println("Nº de notas: " + listaNotas.size());
     }
 }

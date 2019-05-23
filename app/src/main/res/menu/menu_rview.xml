@@ -7,4 +7,8 @@
         app:showAsAction="never" >
 
     </item>
+    <item
+        android:id="@+id/logout"
+        android:title="Logout">
+    </item>
 </menu>

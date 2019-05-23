@@ -1,0 +1,48 @@
+{
+  "project_info": {
+    "project_number": "102267659585",
+    "firebase_url": "https://lyrical-notes.firebaseio.com",
+    "project_id": "lyrical-notes",
+    "storage_bucket": "lyrical-notes.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:102267659585:android:ab1529aecc77493a",
+        "android_client_info": {
+          "package_name": "com.diurno.dam2.lyricalnotes"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "102267659585-uu5o006htc1o9a8re21fopll2vtskjom.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.diurno.dam2.lyricalnotes",
+            "certificate_hash": "4f66148c5ad2c588e28faec82d4c82a623430a0d"
+          }
+        },
+        {
+          "client_id": "102267659585-8p3rpe4e3js303qh0j07lkf4lpt2fjft.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAeKvErv5lOWw5R8QneA_8g6LwpRFZtn1E"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "102267659585-8p3rpe4e3js303qh0j07lkf4lpt2fjft.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
