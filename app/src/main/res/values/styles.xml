@@ -1,7 +1,7 @@
 <resources>
 
     <!-- Base application theme. -->
-    <style name="AppTheme" parent="Base.Theme.AppCompat.Light.DarkActionBar">
+    <style name="AppTheme" parent="Theme.MaterialComponents.Light.DarkActionBar.Bridge">
         <!-- Customize your theme here. -->
         <item name="colorPrimary">@color/colorPrimary</item>
         <item name="colorPrimaryDark">@color/colorPrimaryDark</item>
@@ -21,7 +21,7 @@
         <item name="android:textStyle">bold</item>
     </style>
 
-    <style name="LoginAndSignup" parent="Theme.AppCompat.Light.NoActionBar">
+    <style name="LoginAndSignup" parent="Theme.MaterialComponents.Light.NoActionBar.Bridge">
         <item name="colorPrimary">@color/colorPrimary</item>
         <item name="colorPrimaryDark">@color/colorPrimary</item>
         <item name="colorAccent">@android:color/black</item>

@@ -1,25 +1,13 @@
 package com.diurno.dam2.lyricalnotes;
 
-import android.graphics.Typeface;
 import android.os.Bundle;
-import android.support.annotation.Nullable;
-import android.support.v7.app.AppCompatActivity;
+import androidx.annotation.Nullable;
+import androidx.appcompat.app.AppCompatActivity;
 import android.text.Html;
-import android.text.SpannableString;
-import android.text.SpannableStringBuilder;
-import android.text.Spanned;
-import android.text.style.StyleSpan;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.widget.EditText;
 import android.widget.Toast;
-
-import java.io.BufferedWriter;
-import java.io.File;
-import java.io.FileWriter;
-import java.io.OutputStreamWriter;
-import java.util.Iterator;
-import java.util.List;
 
 public class CrearNota extends AppCompatActivity {
     private int idNota;

@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<android.support.constraint.ConstraintLayout
+<androidx.constraintlayout.widget.ConstraintLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
@@ -21,7 +21,7 @@
         app:layout_constraintTop_toTopOf="parent"
         app:srcCompat="@drawable/logo_transparent" />
 
-    <android.support.design.widget.TextInputLayout
+    <com.google.android.material.textfield.TextInputLayout
         android:id="@+id/textInputLayout"
 
         android:layout_width="match_parent"
@@ -40,9 +40,9 @@
             android:foregroundTint="@android:color/black"
             android:hint="@string/correo_electronico"
             android:inputType="textEmailAddress" />
-    </android.support.design.widget.TextInputLayout>
+    </com.google.android.material.textfield.TextInputLayout>
 
-    <android.support.design.widget.TextInputLayout
+    <com.google.android.material.textfield.TextInputLayout
         android:id="@+id/textInputLayout2"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
@@ -61,9 +61,9 @@
             android:foregroundTint="@android:color/black"
             android:hint="@string/contrasena"
             android:inputType="textPassword" />
-    </android.support.design.widget.TextInputLayout>
+    </com.google.android.material.textfield.TextInputLayout>
 
-    <android.support.design.widget.TextInputLayout
+    <com.google.android.material.textfield.TextInputLayout
         android:id="@+id/confirmpass_inputlayout"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
@@ -82,7 +82,7 @@
             android:foregroundTint="@android:color/black"
             android:hint="@string/confirmar_contrasena"
             android:inputType="textPassword" />
-    </android.support.design.widget.TextInputLayout>
+    </com.google.android.material.textfield.TextInputLayout>
 
     <Button
         android:id="@+id/btnSignup"
@@ -109,4 +109,4 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/btnSignup" />
-</android.support.constraint.ConstraintLayout>
+</androidx.constraintlayout.widget.ConstraintLayout>

@@ -2,9 +2,9 @@ package com.diurno.dam2.lyricalnotes;
 
 import android.content.Context;
 import android.content.Intent;
-import android.support.annotation.NonNull;
-import android.support.v7.widget.CardView;
-import android.support.v7.widget.RecyclerView;
+import androidx.annotation.NonNull;
+import androidx.cardview.widget.CardView;
+import androidx.recyclerview.widget.RecyclerView;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -32,8 +32,8 @@ public class Adapter extends RecyclerView.Adapter<NotaViewHolder>  {
         Nota nota = listaNotas.get(position);
         String tituloNota = nota.getTitulo();
         String contenidoNota = nota.getLetras();
-        System.out.println("Titulo de la nota cuando se le asigna a la tarjeta: " + tituloNota);
-        System.out.println("Contenido de la nota cuando se le asigna a la tarjeta: " + contenidoNota);
+        //System.out.println("Titulo de la nota cuando se le asigna a la tarjeta: " + tituloNota);
+        //System.out.println("Contenido de la nota cuando se le asigna a la tarjeta: " + contenidoNota);
         final int idNota = nota.getIdNota();
         notaViewHolder.txtTitulo.setText(tituloNota);
         notaViewHolder.txtContenido.setText(contenidoNota);
@@ -43,8 +43,8 @@ public class Adapter extends RecyclerView.Adapter<NotaViewHolder>  {
             public void onClick(View v) {
                 String titulo = notaViewHolder.txtTitulo.getText().toString();
                 String contenido = notaViewHolder.txtContenido.getText().toString();
-                System.out.println("Título de la nota al pulsar cardView: " + titulo);
-                System.out.println("Contenido de la nota al pulsar cardView: " + contenido);
+                //System.out.println("Título de la nota al pulsar cardView: " + titulo);
+                //System.out.println("Contenido de la nota al pulsar cardView: " + contenido);
                 Intent intent = new Intent(context, CrearNota.class);
                 intent.putExtra("idNota", idNota);
                 intent.putExtra("Titulo", titulo);

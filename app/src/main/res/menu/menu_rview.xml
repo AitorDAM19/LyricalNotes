@@ -11,4 +11,9 @@
         android:id="@+id/logout"
         android:title="Logout">
     </item>
+    <item
+        android:id="@+id/grabaciones"
+        android:title="Grabaciones">
+
+    </item>
 </menu>
