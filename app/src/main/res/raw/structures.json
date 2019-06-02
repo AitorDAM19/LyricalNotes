@@ -2,11 +2,27 @@
   "structures": [
     {
       "genero": "Rap",
-      "items": "[Intro],[Hook],[Verse 1],[Hook],[Verse 2],[Hook],[Outro]"
+      "items": "[Intro],[Estribillo],[Verso 1],[Hook],[Verso 2],[Estribillo],[Outro]"
     },
     {
       "genero": "Trap",
-      "items": "[Hook],[Verse 1],[Hook],[Verse 2]"
+      "items": "[Intro],[Estribillo],[Verso 1],[Estribillo],[Verso 2]"
+    },
+    {
+      "genero": "Pop",
+      "items": "[Estribillo],[Verso 1],[Prestribillo],[Estribillo],[Verso 2],[Prestribillo],[Estribillo],[Outro]"
+    },
+    {
+      "genero": "Heavy metal",
+      "items": "[Intro],[Verso 1],[Estribillo],[Posestribillo],[Puente],[Verso 2],[Estribillo],[Posestribillo]"
+    },
+    {
+      "genero": "Rock",
+      "items": "[Intro],[Verso 1],[Verso 2],[Verso 3],[Verso 4],[Outro]"
+    },
+    {
+      "genero": "K-Pop",
+      "items": "[Intro],[Coro],[Verso 1],[Prestribillo],[Estribillo],[Coro],[Verso 2],[Puente],[Estribillo],[Coro],[Outro]"
     }
   ]
 }

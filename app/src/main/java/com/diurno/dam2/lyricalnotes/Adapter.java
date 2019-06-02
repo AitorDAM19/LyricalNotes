@@ -8,28 +8,79 @@ import androidx.recyclerview.widget.RecyclerView;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ImageView;
+import android.widget.ProgressBar;
 import android.widget.TextView;
 
 import java.util.List;
 
-public class Adapter extends RecyclerView.Adapter<NotaViewHolder>  {
-    private List<Nota> listaNotas;
+public class Adapter extends RecyclerView.Adapter<RecyclerView.ViewHolder>  {
+    private List<Object> listaObjetos;
     private Context context;
-    public Adapter(Context context, List<Nota> listaNotas) {
+    private final int NOTAS = 0, AUDIOS = 1;
+    private RecyclerViewClickListener recyclerViewClickListener;
+    public Adapter(Context context, List<Object> listaNotas, RecyclerViewClickListener recyclerViewClickListener) {
         this.context = context;
-        this.listaNotas= listaNotas;
+        this.listaObjetos = listaNotas;
+        this.recyclerViewClickListener = recyclerViewClickListener;
     }
 
     @NonNull
     @Override
-    public NotaViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-        View view = LayoutInflater.from(parent.getContext()).inflate(R.layout.layout_notas, parent, false);
-        return new NotaViewHolder(view);
+    public RecyclerView.ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
+        RecyclerView.ViewHolder viewHolder = null;
+        LayoutInflater layoutInflater = LayoutInflater.from(parent.getContext());
+        switch (viewType) {
+            case NOTAS:
+                View view = layoutInflater.inflate(R.layout.layout_notas, parent, false);
+                viewHolder = new NotaViewHolder(view);
+                break;
+            case AUDIOS:
+                View view2 = layoutInflater.inflate(R.layout.layout_grabaciones, parent, false);
+                viewHolder = new AudioViewHolder(view2, recyclerViewClickListener);
+                break;
+        }
+        return viewHolder;
     }
 
     @Override
-    public void onBindViewHolder(@NonNull final NotaViewHolder notaViewHolder, int position) {
-        Nota nota = listaNotas.get(position);
+    public void onBindViewHolder(@NonNull final RecyclerView.ViewHolder viewHolder, int position) {
+
+        switch (viewHolder.getItemViewType()) {
+            case NOTAS:
+                NotaViewHolder notaViewHolder = (NotaViewHolder) viewHolder;
+                prepararNotaViewHolder(notaViewHolder, position);
+                break;
+            case AUDIOS:
+                AudioViewHolder audioViewHolder = (AudioViewHolder) viewHolder;
+                prepararAudioViewHolder(audioViewHolder, position);
+                break;
+
+        }
+
+
+
+
+    }
+
+
+    @Override
+    public int getItemCount() {
+        return listaObjetos.size();
+    }
+
+    @Override
+    public int getItemViewType(int position) {
+         if (listaObjetos.get(position) instanceof Nota) {
+             return NOTAS;
+         } else if (listaObjetos.get(position) instanceof Audio) {
+             return AUDIOS;
+         }
+         return  -1;
+    }
+
+    public void prepararNotaViewHolder(final NotaViewHolder notaViewHolder, int position) {
+        Nota nota = (Nota) listaObjetos.get(position);
         String tituloNota = nota.getTitulo();
         String contenidoNota = nota.getLetras();
         //System.out.println("Titulo de la nota cuando se le asigna a la tarjeta: " + tituloNota);
@@ -52,29 +103,73 @@ public class Adapter extends RecyclerView.Adapter<NotaViewHolder>  {
                 context.startActivity(intent);
             }
         });
+    }
 
+    public void prepararAudioViewHolder(AudioViewHolder audioViewHolder, int position) {
+        Audio audio = (Audio) listaObjetos.get(position);
+        String title = audio.getTitle();
+        audioViewHolder.textView.setText(title);
+    }
+
+
+    class NotaViewHolder extends RecyclerView.ViewHolder {
+        TextView txtTitulo;
+        TextView txtContenido;
+        CardView layout;
+
+        NotaViewHolder (View itemView) {
+            super(itemView);
+            txtTitulo = itemView.findViewById(R.id.titulo);
+            txtContenido = itemView.findViewById(R.id.contenido);
+            layout = itemView.findViewById(R.id.card_view);
+
+            layout.setOnLongClickListener(new View.OnLongClickListener() {
+                @Override
+                public boolean onLongClick(View v) {
+                    if (recyclerViewClickListener != null) {
+                        recyclerViewClickListener.onLongClick(v, getAdapterPosition());
+                        return true;
+                    }
+                    return false;
+                }
+            });
+        }
 
 
     }
 
+    class AudioViewHolder extends RecyclerView.ViewHolder {
+        ImageView imageView;
+        TextView textView;
+        ProgressBar progressBar;
+        CardView cardView;
+        public AudioViewHolder(@NonNull View itemView, final RecyclerViewClickListener recyclerViewClickListener) {
+            super(itemView);
+            imageView = itemView.findViewById(R.id.imgPlayStop);
+            textView = itemView.findViewById(R.id.txtTituloAudio);
+            progressBar = itemView.findViewById(R.id.progressBar);
+            cardView = itemView.findViewById(R.id.card_view_grabaciones);
+            imageView.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    if (recyclerViewClickListener != null) {
+                        recyclerViewClickListener.onViewClicked(v, getAdapterPosition());
+                    }
+                }
+            });
 
-    @Override
-    public int getItemCount() {
-        return listaNotas.size();
+            cardView.setOnLongClickListener(new View.OnLongClickListener() {
+                @Override
+                public boolean onLongClick(View v) {
+                    if (recyclerViewClickListener != null) {
+                        recyclerViewClickListener.onLongClick(v, getAdapterPosition());
+                        return true;
+                    }
+                    return false;
+                }
+            });
+        }
     }
 }
 
-class NotaViewHolder extends RecyclerView.ViewHolder {
-    TextView txtTitulo;
-    TextView txtContenido;
-    CardView layout;
 
-    NotaViewHolder (View itemView) {
-        super(itemView);
-        txtTitulo = itemView.findViewById(R.id.titulo);
-        txtContenido = itemView.findViewById(R.id.contenido);
-        layout = itemView.findViewById(R.id.card_view);
-    }
-
-
-}

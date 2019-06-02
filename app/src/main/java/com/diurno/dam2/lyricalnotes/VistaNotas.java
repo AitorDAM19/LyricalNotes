@@ -1,14 +1,15 @@
 package com.diurno.dam2.lyricalnotes;
 
 import android.Manifest;
+import android.app.ActionBar;
+import android.content.BroadcastReceiver;
 import android.content.ComponentName;
-import android.content.ContentResolver;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.ServiceConnection;
 import android.content.pm.PackageManager;
-import android.database.Cursor;
 import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.graphics.PorterDuff;
@@ -27,13 +28,14 @@ import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.fragment.app.FragmentTransaction;
+import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 import androidx.recyclerview.widget.StaggeredGridLayoutManager;
 import androidx.recyclerview.widget.ItemTouchHelper;
 
 import android.os.Environment;
 import android.os.IBinder;
-import android.provider.MediaStore;
 import android.provider.Settings;
 import android.text.InputType;
 import android.view.LayoutInflater;
@@ -41,6 +43,7 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.EditText;
+import android.widget.ImageView;
 import android.widget.Toast;
 
 import com.google.firebase.auth.FirebaseAuth;
@@ -50,56 +53,59 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.BufferedReader;
+import java.io.BufferedWriter;
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.Writer;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Stack;
 
-public class VistaNotas extends AppCompatActivity implements View.OnClickListener {
-    private static final int WRITE_EXTERNAL_PERMISSION_REQUEST = 2;
-    private String rutaAudios;
-    private Drawable iconoBorrar;
+public class VistaNotas extends AppCompatActivity implements View.OnClickListener, RecyclerViewClickListener {
+    public static final String Broadcast_PLAY_NEW_AUDIO = "com.diurno.dam2.lyricalnotes.PlayNewAudio";
+    public static final String Broadcast_STOP_AUDIO = "com.diurno.dam2.lyricalnotes.StopAudio";
+    private static final int RECORD_AUDIO_PÈRMISSION_REQUEST = 2;
     private RecyclerView recyclerView;
-    private List<Nota> listaNotas;
-    private List<Audio> listaAudios;
-    private int idUsuario;
+    private List<Object> listaObjetos;
+    private List<File> audioFiles;
     private String UID;
     private Stack<Nota> stackNotas;
-    private int generoSeleccionado;
+    private int lastPlayedIndex;
+    private ImageView lastPlayedImageView;
     private StaggeredGridLayoutManager staggeredGridLayoutManager;
     private FloatingActionButton fab;
     private MediaPlayerService player;
     private boolean serviceBound = false;
     private static Adapter adapter;
     private MediaRecorder myAudioRecorder;
-    private String outputFile;
     private boolean layoutNotas = true, layoutAudios = false, grabandoAudio = false;
+    private boolean reproduciendoAudio = false;
+    private Snackbar snackbar;
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.recycler_view);
         stackNotas = new Stack<>();
-        iconoBorrar = ContextCompat.getDrawable(VistaNotas.this, R.drawable.ic_delete_white_24);
         Bundle bundle = getIntent().getExtras();
         UID = bundle.getString("id");
-        rutaAudios = Environment.getExternalStorageDirectory().getAbsolutePath() + File.separator + UID + File.separator;
-        System.out.println("La ruta de los audios: " + rutaAudios);
         recyclerView = findViewById(R.id.recyclerView);
         staggeredGridLayoutManager = new StaggeredGridLayoutManager(3, 1);
         recyclerView.setLayoutManager(staggeredGridLayoutManager);
-        listaNotas = new ArrayList<>();
-        listaAudios = new ArrayList<>();
-        adapter = new Adapter(VistaNotas.this, listaNotas);
+        listaObjetos = new ArrayList<>();
+        audioFiles = new ArrayList<>();
+        adapter = new Adapter(VistaNotas.this, listaObjetos, this);
         recyclerView.setAdapter(adapter);
         cargarNotas2();
 
         fab = findViewById(R.id.floatingActionButton);
         fab.setOnClickListener(this);
-
+        crearDirectorioEstructuras();
         ItemTouchHelper.SimpleCallback simpleItemTouchCallback = new ItemTouchHelper.SimpleCallback(0, ItemTouchHelper.LEFT ) {
             @Override
             public boolean onMove(@NonNull RecyclerView recyclerView, @NonNull RecyclerView.ViewHolder viewHolder, @NonNull RecyclerView.ViewHolder viewHolder1) {
@@ -108,18 +114,6 @@ public class VistaNotas extends AppCompatActivity implements View.OnClickListene
 
             @Override
             public void onChildDraw(@NonNull Canvas c, @NonNull RecyclerView recyclerView, @NonNull RecyclerView.ViewHolder viewHolder, float dX, float dY, int actionState, boolean isCurrentlyActive) {
-                View itemView = viewHolder.itemView;
-                int itemHeight = itemView.getBottom() - itemView.getTop();
-                boolean isCanceled = dX == 0f && !isCurrentlyActive;
-
-                if (isCanceled) {
-                    Rect rect = new Rect((int) (itemView.getRight() + dX),  itemView.getTop(),  itemView.getRight(),  itemView.getBottom());
-                    Paint paint = new Paint();
-                    paint.setXfermode(new PorterDuffXfermode(PorterDuff.Mode.CLEAR));
-                    c.drawRect(rect, paint);
-                    super.onChildDraw(c, recyclerView, viewHolder, dX, dY, actionState, false);
-                    return;
-                }
                 super.onChildDraw(c, recyclerView, viewHolder, dX, dY, actionState, isCurrentlyActive);
             }
 
@@ -130,45 +124,16 @@ public class VistaNotas extends AppCompatActivity implements View.OnClickListene
 
             @Override
             public void onSwiped(@NonNull RecyclerView.ViewHolder viewHolder, int i) {
-                int swipedPosition = viewHolder.getAdapterPosition();
-                final UsersDatabase db = new UsersDatabase(VistaNotas.this);
-                final Nota notaBorrada = listaNotas.get(swipedPosition);
-                stackNotas.push(notaBorrada);
-                final int posicionNota = listaNotas.indexOf(notaBorrada);
-                listaNotas.remove(swipedPosition);
-                Snackbar snackbar = Snackbar.make(findViewById(R.id.ConstraintLayout), "Nota borrada", 5000).setAction("Deshacer", new View.OnClickListener() {
-                    @Override
-                    public void onClick(View v) {
-                        Nota nota = stackNotas.pop();
-                        listaNotas.add(posicionNota, nota);
-                        cargarNotas2();
-                    }
-                });
-                snackbar.addCallback(new Snackbar.Callback() {
-                    @Override
-                    public void onShown(Snackbar sb) {
-                        super.onShown(sb);
-                    }
-
-                    @Override
-                    public void onDismissed(Snackbar transientBottomBar, int event) {
-                        if (event == Snackbar.Callback.DISMISS_EVENT_TIMEOUT) {
-                            db.borrarNotaUID(notaBorrada.getIdNota());
-                            cargarNotas2();
-                        }
-                    }
-                });
-                snackbar.show();
-
-                Adapter adapter = new Adapter(VistaNotas.this, listaNotas);
-                recyclerView.setAdapter(adapter);
-                recyclerView.smoothScrollBy(0, recyclerView.getHeight());
-                //cargarNotas2();
+                if (layoutNotas) {
+                    swipeNota(viewHolder, i);
+                } else if (layoutAudios) {
+                    swipeAudio(viewHolder, i);
+                }
             }
         };
 
         new ItemTouchHelper(simpleItemTouchCallback).attachToRecyclerView(recyclerView);
-        //playAudio("https://upload.wikimedia.org/wikipedia/commons/6/6c/Grieg_Lyric_Pieces_Kobold.ogg");
+       register_finishedAudio();
     }
 
     @Override
@@ -180,18 +145,15 @@ public class VistaNotas extends AppCompatActivity implements View.OnClickListene
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         int id = item.getItemId();
-
         switch (id) {
-            /*case R.id.action_settings2:
-                listaNotas.clear();
-                UsersDatabase db = new UsersDatabase(VistaNotas.this);
-                db.borrarNotas(idUsuario);
-                Adapter adapter = new Adapter(VistaNotas.this, listaNotas);
-                recyclerView.setAdapter(adapter);
-                recyclerView.smoothScrollBy(0, recyclerView.getHeight());
-                return true;*/
+            case R.id.notas:
+                fab.setImageResource(R.drawable.editar_24);
+                layoutAudios = false;
+                layoutNotas = true;
+                cargarNotas2();
+                return true;
             case R.id.grabaciones:
-               checkPermission();
+                checkPermission();
                 return true;
             case R.id.logout:
                 FirebaseAuth auth = FirebaseAuth.getInstance();
@@ -208,7 +170,12 @@ public class VistaNotas extends AppCompatActivity implements View.OnClickListene
     @Override
     protected void onResume() {
         super.onResume();
-        cargarNotas2();
+        if (layoutNotas) {
+            cargarNotas2();
+        } else if (layoutAudios) {
+            cargarAudios();
+        }
+
     }
 
     @Override
@@ -231,11 +198,18 @@ public class VistaNotas extends AppCompatActivity implements View.OnClickListene
             //service is active
             player.stopSelf();
         }
+        unregisterReceiver(audioFinished);
     }
 
     public void iniciar() {
-        InputStream is =  getResources().openRawResource(R.raw.structures);
-        BufferedReader br = new BufferedReader(new InputStreamReader(is));
+        File file = new File(getFilesDir().getAbsolutePath() + "/" + UID + "/Estructuras", "structures.json");
+        FileInputStream fis = null;
+        try {
+            fis = new FileInputStream(file);
+        } catch (FileNotFoundException fnfe) {
+            fnfe.printStackTrace();
+        }
+        BufferedReader br = new BufferedReader(new InputStreamReader(fis));
         StringBuilder sb = new StringBuilder();
         String resultado = null;
         String line = null;
@@ -252,7 +226,6 @@ public class VistaNotas extends AppCompatActivity implements View.OnClickListene
                 JSONObject estructura = structures.getJSONObject(i);
                 String genero = estructura.getString("genero");
                 String itemsString = estructura.getString("items");
-                //itemsString = itemsString.replaceAll(" ", "");
                 String[] items2 = itemsString.split(",");
                 listaNombreGeneros.add(genero);
                 listaItems.add(items2);
@@ -261,9 +234,9 @@ public class VistaNotas extends AppCompatActivity implements View.OnClickListene
         } catch (IOException | JSONException e) {
             e.printStackTrace();
         }
-        CharSequence[] generos = listaNombreGeneros.toArray(new CharSequence[listaNombreGeneros.size()]);
+        listaNombreGeneros.add("Crear estructura");
+        final CharSequence[] generos = listaNombreGeneros.toArray(new CharSequence[listaNombreGeneros.size()]);
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
-        LayoutInflater layoutInflater = getLayoutInflater();
 
         builder.setTitle("Selecciona el género")
                 .setNegativeButton("Cancelar", new DialogInterface.OnClickListener() {
@@ -275,17 +248,22 @@ public class VistaNotas extends AppCompatActivity implements View.OnClickListene
                 .setItems(generos, new DialogInterface.OnClickListener() {
                     @Override
                     public void onClick(DialogInterface dialog, int which) {
-                        System.out.println("Seleccionado: " + which);
-                        Intent intent = new Intent(VistaNotas.this, CrearNota.class);
-                        intent.putExtra("genre", listaItems.get(which));
-                        //intent.putExtra("idUsu", idUsuario);
-                        intent.putExtra("uid", UID);
-                        startActivity(intent);
+                        if (which == generos.length - 1) {
+                            Bundle bundle = new Bundle();
+                            bundle.putString("uid", UID);
+                            DialogCrearEstructura dialogCrearEstructura = new DialogCrearEstructura();
+                            dialogCrearEstructura.setArguments(bundle);
+                            FragmentTransaction ft = getSupportFragmentManager().beginTransaction();
+                            dialogCrearEstructura.show(ft, DialogCrearEstructura.TAG);
+                        } else {
+                            System.out.println("Seleccionado: " + which);
+                            Intent intent = new Intent(VistaNotas.this, CrearNota.class);
+                            intent.putExtra("genre", listaItems.get(which));
+                            intent.putExtra("uid", UID);
+                            startActivity(intent);
+                        }
                     }
                 }).create().show();
-        /*Dialog dialog = builder.create();
-        dialog.getWindow().setBackgroundDrawableResource(R.drawable.dialog_background);
-        dialog.show();*/
     }
 
     /**
@@ -293,17 +271,18 @@ public class VistaNotas extends AppCompatActivity implements View.OnClickListene
      */
     private void cargarNotas2() {
         UsersDatabase db = new UsersDatabase(VistaNotas.this);
-        listaNotas.clear();
-        listaNotas.addAll(db.obtenerNotasUID(UID));
-        //Adapter adapter = new Adapter(VistaNotas.this, listaNotas);
-        //recyclerView.setAdapter(adapter);
+        listaObjetos.clear();
+        listaObjetos.addAll(db.obtenerNotasUID(UID));
+        recyclerView.setLayoutManager(staggeredGridLayoutManager);
         adapter.notifyDataSetChanged();
-        //recyclerView.smoothScrollBy(0, recyclerView.getHeight());
-        System.out.println("Nº de notas: " + listaNotas.size());
     }
 
     public void setUpLayoutGrabaciones() {
+        if (snackbar != null) {
+            snackbar.dismiss();
+        }
         fab.setImageResource(R.drawable.microfono_24);
+        recyclerView.setLayoutManager(new LinearLayoutManager(this));
         layoutAudios = true;
         layoutNotas = false;
         createAudioDir();
@@ -336,12 +315,12 @@ public class VistaNotas extends AppCompatActivity implements View.OnClickListene
     };
 
     private void createAudioDir() {
-        File folder = new File(Environment.getExternalStorageDirectory(), UID);
+        File folder = new File(getFilesDir().getPath(), UID + "/Grabaciones");
         System.out.println("Directorio de audios: " + folder.getAbsolutePath());
         if (folder.exists()) {
             System.out.println("YA EXISTE LA CARPETA");
         } else {
-            boolean seCreo = folder.mkdir();
+            boolean seCreo = folder.mkdirs();
             if (seCreo) {
                 System.out.println("SE CREO LA CARPETA");
             } else {
@@ -351,54 +330,68 @@ public class VistaNotas extends AppCompatActivity implements View.OnClickListene
     }
 
     private void cargarAudios() {
-        ContentResolver contentResolver = getContentResolver();
-        //System.out.println(getFilesDir().getPath() + File.separator + UID);
-        //System.out.println("Ruta con mediastore: " + MediaStore.Audio.Media.INTERNAL_CONTENT_URI);
-        //Uri uri = new Uri.Builder().path(Environment.getExternalStorageDirectory().getAbsolutePath() + File.separator + UID + File.separator).build();
-        Uri uri = MediaStore.Audio.Media.EXTERNAL_CONTENT_URI;
-        System.out.println("URI: " + uri.getPath());
-        String[] proj = {MediaStore.Audio.Media.DATA, MediaStore.Audio.Media.TITLE};
-        String selection = MediaStore.Audio.Media.IS_MUSIC + "!= 0 AND " + MediaStore.Audio.Media.DATA + " LIKE '/storage/emulated/0/naXabfrTxebf0jEHNrjzyUfEbJq1/%'";
-        String sortOrder = MediaStore.Audio.Media.DATE_ADDED + " ASC";
 
-        Cursor cursor = contentResolver.query(uri, proj, selection, null, null);
+        File file = new File(getFilesDir().getPath(), UID );
+        File audios = new File(file, "Grabaciones");
+        File[] archivos = audios.listFiles();
+        listaObjetos.clear();
+        for (int i = 0; i < archivos.length; i++) {
+            File audioFile = archivos[i];
+            System.out.println("Nombre del archivo: " + audioFile.getName());
+            listaObjetos.add(new Audio(archivos[i].getAbsolutePath(), audioFile.getName().substring(0, audioFile.getName().length() - 4)));
+            audioFiles.add(audioFile);
 
-        if (cursor != null && cursor.getCount() > 0) {
-            System.out.println("HAY AUDIOS!");
-            while (cursor.moveToNext()) {
-                String data = cursor.getString(cursor.getColumnIndex(MediaStore.Audio.Media.DATA));
-                String title = cursor.getString(cursor.getColumnIndex(MediaStore.Audio.Media.TITLE));
-                listaAudios.add(new Audio(data, title));
-            }
-            cursor.close();
         }
-
-        System.out.println("NUMERO DE AUDIOS: " + listaAudios.size());
-        for (Audio audio : listaAudios) {
+        adapter.notifyDataSetChanged();
+        //
+        System.out.println("NUMERO DE AUDIOS: " + listaObjetos.size());
+        for (Object object : listaObjetos) {
+            Audio audio = (Audio) object;
             System.out.println("Datos del audio: " + audio.getData());
-        }
-        if (listaAudios.size() != 0) {
-            playAudio(listaAudios.get(0).getData());
         }
     }
 
-    private void playAudio(String media) {
+    private void playAudio(int audioIndex) {
         //Check is service is active
         if (!serviceBound) {
+            ArrayList<Audio> audioList = new ArrayList<>();
+            for (Object o : listaObjetos) {
+                Audio audio = (Audio) o;
+                audioList.add(audio);
+            }
+            //Store Serializable audioList to SharedPreferences
+            StorageUtil storage = new StorageUtil(getApplicationContext());
+            storage.storeAudio(audioList);
+            storage.storeAudioIndex(audioIndex);
+
             Intent playerIntent = new Intent(this, MediaPlayerService.class);
-            playerIntent.putExtra("media", media);
             startService(playerIntent);
             bindService(playerIntent, serviceConnection, Context.BIND_AUTO_CREATE);
         } else {
+            //Store the new audioIndex to SharedPreferences
+            StorageUtil storage = new StorageUtil(getApplicationContext());
+            storage.storeAudioIndex(audioIndex);
+
             //Service is active
-            //Send media with BroadcastReceiver
+            //Send a broadcast to the service -> PLAY_NEW_AUDIO
+            Intent broadcastIntent = new Intent(Broadcast_PLAY_NEW_AUDIO);
+            sendBroadcast(broadcastIntent);
+        }
+    }
+
+    private void stopAudio(int audioIndex) {
+        if (serviceBound) {
+            StorageUtil storage = new StorageUtil(getApplicationContext());
+            storage.storeAudioIndex(audioIndex);
+            Intent broadcastIntent = new Intent(Broadcast_STOP_AUDIO);
+            sendBroadcast(broadcastIntent);
         }
     }
 
     private void checkPermission() {
 
-        if (ContextCompat.checkSelfPermission(VistaNotas.this, Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED || ContextCompat.checkSelfPermission(VistaNotas.this, Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
-            if(ActivityCompat.shouldShowRequestPermissionRationale(VistaNotas.this, Manifest.permission.WRITE_EXTERNAL_STORAGE) || ActivityCompat.shouldShowRequestPermissionRationale(VistaNotas.this, Manifest.permission.RECORD_AUDIO)) {
+        if (ContextCompat.checkSelfPermission(VistaNotas.this, Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
+            if(ActivityCompat.shouldShowRequestPermissionRationale(VistaNotas.this, Manifest.permission.RECORD_AUDIO)) {
                 requestPermission();
             } else {
                 requestPermission();
@@ -409,30 +402,22 @@ public class VistaNotas extends AppCompatActivity implements View.OnClickListene
     }
 
     private void requestPermission() {
-        final String[] permissions = new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE, Manifest.permission.RECORD_AUDIO};
-        ActivityCompat.requestPermissions(VistaNotas.this, permissions, WRITE_EXTERNAL_PERMISSION_REQUEST);
+        final String[] permissions = new String[]{ Manifest.permission.RECORD_AUDIO};
+        ActivityCompat.requestPermissions(VistaNotas.this, permissions, RECORD_AUDIO_PÈRMISSION_REQUEST);
     }
 
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permission, @NonNull  int[] grantResults) {
         switch (requestCode) {
-            case WRITE_EXTERNAL_PERMISSION_REQUEST: {
-                boolean isPermissionForAllGranted = true;
-                if (grantResults.length > 0 && permission.length == grantResults.length) {
-                    for (int i = 0; i < permission.length; i++) {
-                        if (grantResults[i] != PackageManager.PERMISSION_GRANTED) {
-                            isPermissionForAllGranted = false;
-                        }
-                    }
+            case RECORD_AUDIO_PÈRMISSION_REQUEST: {
+                if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                    setUpLayoutGrabaciones();
                     System.out.println("Se ejecutó onRequestPermissionsResult");
                 } else {
-                    boolean showRationale = shouldShowRequestPermissionRationale( Manifest.permission.WRITE_EXTERNAL_STORAGE);
-                    if (! showRationale) {
+                    boolean showRationale = shouldShowRequestPermissionRationale( Manifest.permission.RECORD_AUDIO);
+                    if (!showRationale) {
                         openSettingsDialog();
                     }
-                   //requestPermission();
-                }
-                if (isPermissionForAllGranted) {
-                    setUpLayoutGrabaciones();
+                    //requestPermission();
                 }
             }
         }
@@ -441,7 +426,7 @@ public class VistaNotas extends AppCompatActivity implements View.OnClickListene
     private void openSettingsDialog() {
         AlertDialog.Builder builder = new AlertDialog.Builder(VistaNotas.this);
         builder.setTitle("Permisos requeridos");
-        builder.setMessage("Esta app necesita el permiso de almacenamiento para poder usar la funcion de Grabaciones.");
+        builder.setMessage("Esta app necesita acceder al micrófono para poder usar la funcion de Grabaciones.");
         builder.setPositiveButton("IR A AJUSTES", new DialogInterface.OnClickListener() {
             @Override
             public void onClick(DialogInterface dialog, int which) {
@@ -459,6 +444,7 @@ public class VistaNotas extends AppCompatActivity implements View.OnClickListene
             }
         });
         builder.show();
+
 
     }
 
@@ -480,7 +466,8 @@ public class VistaNotas extends AppCompatActivity implements View.OnClickListene
                 @Override
                 public void onClick(DialogInterface dialog, int which) {
                     String titulo = input.getText().toString();
-                    myAudioRecorder.setOutputFile(rutaAudios + titulo + ".3gp");
+                    System.out.println("Outputfile: " + getFilesDir().getPath() + File.separator + UID + File.separator + titulo + ".3gp");
+                    myAudioRecorder.setOutputFile(getFilesDir().getPath() + File.separator + UID + File.separator + "Grabaciones" + File.separator + titulo + ".3gp");
                     try {
                         myAudioRecorder.prepare();
                         myAudioRecorder.start();
@@ -502,6 +489,7 @@ public class VistaNotas extends AppCompatActivity implements View.OnClickListene
             }).show();
         } else if (grabandoAudio) {
             myAudioRecorder.stop();
+            myAudioRecorder.reset();
             myAudioRecorder.release();
             myAudioRecorder = null;
             fab.setImageResource(R.drawable.microfono_24);
@@ -509,6 +497,180 @@ public class VistaNotas extends AppCompatActivity implements View.OnClickListene
             cargarAudios();
         } else {
             System.out.println("Esto no funciona que sad man");
+        }
+    }
+
+    private BroadcastReceiver audioFinished = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            lastPlayedImageView.setImageResource(R.drawable.play_48);
+        }
+    };
+
+    private void register_finishedAudio() {
+        IntentFilter filter = new IntentFilter(MediaPlayerService.Broadcast_FINISHED_AUDIO);
+        registerReceiver(audioFinished, filter);
+    }
+
+    @Override
+    public void onRowClicked(int position) {
+
+    }
+
+    @Override
+    public void onViewClicked(View v, int position) {
+        if (v.getId() == R.id.imgPlayStop) {
+            ImageView imageView = (ImageView) v;
+            System.out.println("ImageView del pulsado: " + imageView.toString());
+            if (!reproduciendoAudio) {
+                imageView.setImageResource(R.drawable.stop_48);
+                lastPlayedIndex = position;
+                lastPlayedImageView = imageView;
+                playAudio(position);
+                //audioIndex = position;
+                reproduciendoAudio = true;
+            } else if (reproduciendoAudio && !listaObjetos.get(position).equals(listaObjetos.get(lastPlayedIndex))) {
+                System.out.println("El que se ha pulsado no es el que se está reproduciendo.");
+                stopAudio(lastPlayedIndex);
+                lastPlayedImageView.setImageResource(R.drawable.play_48);
+                lastPlayedIndex = position;
+                lastPlayedImageView = imageView;
+                playAudio(position);
+                imageView.setImageResource(R.drawable.stop_48);
+            } else if (reproduciendoAudio) {
+                imageView.setImageResource(R.drawable.play_48);
+                stopAudio(position);
+                reproduciendoAudio = false;
+            }
+
+        }
+    }
+
+    @Override
+    public void onLongClick(View v, int position) {
+        if (layoutNotas) {
+            Nota notaPulsada = (Nota) listaObjetos.get(position);
+            Toast.makeText(VistaNotas.this, notaPulsada.getTitulo(), Toast.LENGTH_LONG).show();
+        } else if (layoutAudios) {
+            Audio audio = (Audio) listaObjetos.get(position);
+            Toast.makeText(VistaNotas.this, audio.getTitle(), Toast.LENGTH_LONG).show();
+        }
+    }
+
+    private void swipeNota(RecyclerView.ViewHolder viewHolder, int i) {
+        final int swipedPosition = viewHolder.getAdapterPosition();
+        final UsersDatabase db = new UsersDatabase(VistaNotas.this);
+        final Nota notaBorrada = (Nota) listaObjetos.get(swipedPosition);
+        db.borrarNotaUID(notaBorrada.getIdNota());
+        db.close();
+        stackNotas.push(notaBorrada);
+        final int posicionNota = listaObjetos.indexOf(notaBorrada);
+        listaObjetos.remove(swipedPosition);
+        adapter.notifyItemRemoved(swipedPosition);
+        //snackbar = null;
+        snackbar = Snackbar.make(findViewById(R.id.ConstraintLayout), "Nota borrada", 5000).setAction("Deshacer", new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Nota nota = stackNotas.pop();
+                UsersDatabase db1 = new UsersDatabase(VistaNotas.this);
+                db1.guardarNotaUID(UID, nota.getTitulo(), nota.getLetras());
+                listaObjetos.add(posicionNota, nota);
+                adapter.notifyItemInserted(swipedPosition);
+            }
+        });
+        snackbar.addCallback(new Snackbar.Callback() {
+            @Override
+            public void onShown(Snackbar sb) {
+                super.onShown(sb);
+            }
+
+            @Override
+            public void onDismissed(Snackbar transientBottomBar, int event) {
+                if (event == Snackbar.Callback.DISMISS_EVENT_TIMEOUT) {
+                    db.borrarNotaUID(notaBorrada.getIdNota());
+                    cargarNotas2();
+                }
+                fab.setY(fab.getY() + 80);
+            }
+        });
+        snackbar.show();
+        fab.setY(fab.getY() - 80);
+    }
+
+    private void swipeAudio(RecyclerView.ViewHolder viewHolder, final int i) {
+        final int swipedPosition = viewHolder.getAdapterPosition();
+        final File audio = audioFiles.get(swipedPosition);
+        final Audio audio1 = (Audio) listaObjetos.get(swipedPosition);
+        listaObjetos.remove(audio1);
+        adapter.notifyItemRemoved(swipedPosition);
+        Snackbar snackbar = Snackbar.make(findViewById(R.id.ConstraintLayout), "Grabación borrada", 5000).setAction("Deshacer", new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                listaObjetos.add(swipedPosition, audio1);
+                adapter.notifyItemInserted(swipedPosition);
+            }
+        });
+        snackbar.addCallback(new Snackbar.Callback() {
+            @Override
+            public void onShown(Snackbar sb) {
+                super.onShown(sb);
+            }
+
+            @Override
+            public void onDismissed(Snackbar transientBottomBar, int event) {
+                if (event == Snackbar.Callback.DISMISS_EVENT_TIMEOUT) {
+                    boolean seBorro = audio.delete();
+                    if (seBorro) {
+                        System.out.println("El archivo se borró correctamente");
+                    } else {
+                        System.out.println("No se borró");
+                    }
+                }
+                fab.setY(fab.getY() + 80);
+            }
+        });
+        snackbar.show();
+        fab.setY(fab.getY() - 80);
+    }
+
+
+    private void crearDirectorioEstructuras() {
+        createAudioDir();
+        File file = new File(getFilesDir().getAbsolutePath() + "/" + UID, "Estructuras");
+        System.out.println("Ruta a la carpeta Estructuras: " + file.getAbsolutePath());
+        if (!file.exists()) {
+            boolean seCreo = file.mkdir();
+           if (seCreo) {
+               System.out.println("Se creo la carpeta Estructuras");
+               InputStream is =  getResources().openRawResource(R.raw.structures);
+               BufferedReader br = new BufferedReader(new InputStreamReader(is));
+               StringBuilder sb = new StringBuilder();
+               String resultado = null;
+               String line = null;
+               try {
+                   while ((line = br.readLine()) != null) {
+                       sb.append(line + "\n");
+                   }
+                   resultado = sb.toString();
+                   JSONObject jsonObject = new JSONObject(resultado);
+                   File archivoJson = new File(file, "structures.json");
+                   System.out.println("Ruta al archivo json: " + archivoJson.getAbsolutePath());
+                   System.out.println("Contenido del JSON de RAW: " + resultado);
+                   System.out.println("Contenido del objeto JSON: " + jsonObject.toString());
+                   if (!archivoJson.exists()) {
+                       boolean seCreoJson = archivoJson.createNewFile();
+                       if (seCreoJson) {
+                           System.out.println("SE CREO EL .JSON!!!");
+                           Writer output = new BufferedWriter(new FileWriter(archivoJson));
+                           output.write(jsonObject.toString());
+                           output.close();
+                       }
+                   }
+
+               } catch (IOException |JSONException ioe) {
+                   ioe.printStackTrace();
+               }
+           }
         }
     }
 }

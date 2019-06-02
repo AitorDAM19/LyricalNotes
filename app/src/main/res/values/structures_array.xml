@@ -1,18 +1,21 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string-array name="hiphop">
+    <string-array name="secciones">
         <item>[Intro]</item>
-        <item>[Hook]</item>
-        <item>[Verse 1]</item>
-        <item>[Hook]</item>
-        <item>[Verse 2]</item>
-        <item>[Hook]</item>
         <item>[Outro]</item>
-    </string-array>
-    <string-array name="trap">
-        <item>[Hook]</item>
-        <item>[Verse 1]</item>
-        <item>[Hook]</item>
-        <item>[Verse 2]</item>
+        <item>[Estribillo]</item>
+        <item>[Prestribillo]</item>
+        <item>[Posestribillo</item>
+        <item>[Precoro]</item>
+        <item>[Coro]</item>
+        <item>[Poscoro]</item>
+        <item>[Interludio]</item>
+        <item>[Puente]</item>
+        <item>[Verso 1]</item>
+        <item>[Verso 2]</item>
+        <item>[Verso 3]</item>
+        <item>[Verso 4]</item>
+        <item>[Verso 5]</item>
+        <item>[Verso 6]</item>
     </string-array>
 </resources>

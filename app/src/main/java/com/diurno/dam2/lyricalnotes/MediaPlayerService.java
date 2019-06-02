@@ -1,8 +1,10 @@
 package com.diurno.dam2.lyricalnotes;
 
 import android.app.Service;
+import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.media.AudioManager;
 import android.media.MediaPlayer;
 import android.os.Binder;
@@ -10,6 +12,7 @@ import android.os.IBinder;
 import android.util.Log;
 
 import java.io.IOException;
+import java.util.ArrayList;
 
 public class MediaPlayerService extends Service implements MediaPlayer.OnCompletionListener,
         MediaPlayer.OnPreparedListener, MediaPlayer.OnErrorListener, MediaPlayer.OnSeekCompleteListener,
@@ -17,7 +20,7 @@ public class MediaPlayerService extends Service implements MediaPlayer.OnComplet
 
         AudioManager.OnAudioFocusChangeListener {
 
-
+    public static final String Broadcast_FINISHED_AUDIO = "com.diurno.dam2.lyricalnotes.FinishedAudio";
     // Binder given to clients
     private final IBinder iBinder = new LocalBinder();
 
@@ -25,17 +28,37 @@ public class MediaPlayerService extends Service implements MediaPlayer.OnComplet
     private String mediaFile;
     private int resumePosition;
     private AudioManager audioManager;
-
+    private ArrayList<Audio> audioList;
+    private int audioIndex = -1;
+    private Audio activeAudio;
     @Override
     public IBinder onBind(Intent intent) {
         return iBinder;
     }
 
+
+    @Override
+    public void onCreate() {
+        super.onCreate();
+        register_playNewAudio();
+        register_stopAudio();
+    }
+
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
         try {
-            //An audio file is passed to the service through putExtra();
-            mediaFile = intent.getExtras().getString("media");
+
+            //Load data from SharedPreferences
+            StorageUtil storage = new StorageUtil(getApplicationContext());
+            audioList = storage.loadAudio();
+            audioIndex = storage.loadAudioIndex();
+
+            if (audioIndex != -1 && audioIndex < audioList.size()) {
+                //index is in a valid range
+                activeAudio = audioList.get(audioIndex);
+            } else {
+                stopSelf();
+            }
         } catch (NullPointerException e) {
             stopSelf();
         }
@@ -46,9 +69,8 @@ public class MediaPlayerService extends Service implements MediaPlayer.OnComplet
             stopSelf();
         }
 
-        if (mediaFile != null && !mediaFile.equals("")) {
             initMediaPlayer();
-        }
+
         return super.onStartCommand(intent, flags, startId);
     }
 
@@ -60,10 +82,16 @@ public class MediaPlayerService extends Service implements MediaPlayer.OnComplet
             mediaPlayer.release();
         }
         removeAudioFocus();
+        unregisterReceiver(playNewAudio);
+        unregisterReceiver(stopAudio);
+
+        new StorageUtil(getApplicationContext()).clearCachedAudioPlaylist();
     }
 
     private void initMediaPlayer() {
-        mediaPlayer = new MediaPlayer();
+        if (mediaPlayer == null) {
+            mediaPlayer = new MediaPlayer();
+        }
         //Set up MediaPlayer event listeners
         mediaPlayer.setOnCompletionListener(this);
         mediaPlayer.setOnErrorListener(this);
@@ -77,7 +105,7 @@ public class MediaPlayerService extends Service implements MediaPlayer.OnComplet
         mediaPlayer.setAudioStreamType(AudioManager.STREAM_MUSIC);
         try {
             // Set the data source to the mediaFile location
-            mediaPlayer.setDataSource(mediaFile);
+            mediaPlayer.setDataSource(activeAudio.getData());
         } catch (IOException e) {
             e.printStackTrace();
             stopSelf();
@@ -112,7 +140,54 @@ public class MediaPlayerService extends Service implements MediaPlayer.OnComplet
         }
     }
 
+    private BroadcastReceiver playNewAudio = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
 
+            //Get the new media index form SharedPreferences
+            audioIndex = new StorageUtil(getApplicationContext()).loadAudioIndex();
+            if (audioIndex != -1 && audioIndex < audioList.size()) {
+                //index is in a valid range
+                activeAudio = audioList.get(audioIndex);
+            } else {
+                stopSelf();
+            }
+
+            //A PLAY_NEW_AUDIO action received
+            //reset mediaPlayer to play the new Audio
+            stopMedia();
+            mediaPlayer.reset();
+            initMediaPlayer();
+            //updateMetaData();
+            //buildNotification(PlaybackStatus.PLAYING);
+        }
+    };
+
+    private BroadcastReceiver stopAudio = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            audioIndex = new StorageUtil(getApplicationContext()).loadAudioIndex();
+            if (activeAudio.equals(audioList.get(audioIndex))) {
+                stopMedia();
+                //mediaPlayer.reset();
+                //initMediaPlayer();
+            } else {
+                stopSelf();
+            }
+        }
+    };
+
+
+    private void register_playNewAudio() {
+        //Register playNewMedia receiver
+        IntentFilter filter = new IntentFilter(VistaNotas.Broadcast_PLAY_NEW_AUDIO);
+        registerReceiver(playNewAudio, filter);
+    }
+
+    private void register_stopAudio() {
+        IntentFilter filter = new IntentFilter(VistaNotas.Broadcast_STOP_AUDIO);
+        registerReceiver(stopAudio, filter);
+    }
 
     @Override
     public void onBufferingUpdate(MediaPlayer mp, int percent) {
@@ -124,7 +199,8 @@ public class MediaPlayerService extends Service implements MediaPlayer.OnComplet
     public void onCompletion(MediaPlayer mp) {
         //Invoked when playback of a media source has completed.
         stopMedia();
-
+        Intent broadcastIntent = new Intent(Broadcast_FINISHED_AUDIO);
+        sendBroadcast(broadcastIntent);
         //stop the service
         stopSelf();
     }

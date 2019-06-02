@@ -20,6 +20,8 @@ public class CrearNota extends AppCompatActivity {
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.layout_crear_nota);
+        getSupportActionBar().setDisplayHomeAsUpEnabled(true);
+        getSupportActionBar().setDisplayShowHomeEnabled(true);
         etxtTitulo = findViewById(R.id.etxtTitulo);
         etxtContenido = findViewById(R.id.etxtContenido);
         etxtContenido.setCustomSelectionActionModeCallback(new ListenerTexto(etxtContenido, CrearNota.this));
@@ -59,6 +61,12 @@ public class CrearNota extends AppCompatActivity {
         return true;
     }
 
+    @Override
+    public void onBackPressed() {
+        super.onBackPressed();
+        guardar();
+    }
+
     /**
      * Guarda la nota
      */
@@ -66,6 +74,12 @@ public class CrearNota extends AppCompatActivity {
         UsersDatabase db = new UsersDatabase(CrearNota.this);
         String titulo =  etxtTitulo.getText().toString();
         String contenido = etxtContenido.getText().toString();
+        if (contenido.isEmpty() && titulo.isEmpty()) {
+            Toast.makeText(this, "No puedes crear una nota vacía", Toast.LENGTH_SHORT).show();
+            return;
+        } else if (titulo.isEmpty()) {
+            titulo = "Sin título";
+        }
         //db.guardarNota(idUsuario,titulo, contenido);
         db.guardarNotaUID(UID, titulo, contenido);
         Toast.makeText(this, "Nota guardada.", Toast.LENGTH_SHORT).show();
@@ -87,7 +101,7 @@ public class CrearNota extends AppCompatActivity {
      */
     public void borrarNota() {
         UsersDatabase db = new UsersDatabase(CrearNota.this);
-        db.borrarNota(idNota);
+        db.borrarNotaUID(idNota);
         Toast.makeText(this, "Nota borrada.", Toast.LENGTH_LONG).show();
         finish();
     }
@@ -97,21 +111,12 @@ public class CrearNota extends AppCompatActivity {
         int id = item.getItemId();
 
         switch (id) {
-            case R.id.action_settings:
-                if (editar) {
-                    editar();
-                }
-                else {
-                    if (etxtTitulo.getText().toString().equals("") && etxtContenido.getText().toString().equals("")) {
-                        Toast.makeText(CrearNota.this, "No puedes crear una nota sin título ni contenido.", Toast.LENGTH_LONG).show();
-                    } else {
-                        guardar();
-                    }
-                }
-                return true;
             case R.id.borrarNota:
                     borrarNota();
                 return true;
+            case android.R.id.home:
+                 guardar();
+                 finish();
             default:
                 return super.onOptionsItemSelected(item);
         }

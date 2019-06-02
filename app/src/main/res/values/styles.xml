@@ -7,8 +7,13 @@
         <item name="colorPrimaryDark">@color/colorPrimaryDark</item>
         <item name="colorAccent">@color/colorAccent</item>
         <item name="android:colorBackground">@android:color/white</item>
+        <item name="android:foregroundTint">@android:color/black</item>
+        <item name="android:textColorPrimary">@android:color/black</item>
+        <item name="android:textColorSecondary">@android:color/black</item>
+        <item name="android:colorForeground">@android:color/black</item>
         <item name="cardViewStyle">@style/AppTheme</item>
         <item name="coordinatorLayoutStyle">@style/AppTheme</item>
+        <item name="dialogCornerRadius">8dp</item>
         <!--<item name="android:fontFamily">@font/beautiful_people</item> !-->
     </style>
 
@@ -27,5 +32,25 @@
         <item name="colorAccent">@android:color/black</item>
         <item name="android:colorBackground">@android:color/white</item>
         <item name="android:foregroundTint">@android:color/black</item>
+    </style>
+
+
+    <style name="FullScreenDialogStyle" parent="Theme.MaterialComponents.Dialog">
+        <item name="android:windowNoTitle">true</item>
+        <item name="colorPrimaryDark">@color/colorPrimaryDark</item>
+        <item name="colorPrimary">@color/colorPrimary</item>
+        <item name="colorAccent">@android:color/black</item>
+        <!--<item name="actionMenuTextColor">@android:color/black</item>-->
+        <!-- Set this to true if you want Full Screen without status bar -->
+        <item name="android:windowFullscreen">false</item>
+
+        <item name="android:windowIsFloating">false</item>
+
+        <!-- This is important! Don't forget to set window background -->
+        <item name="android:windowBackground">@android:color/white</item>
+
+        <!-- Additionally if you want animations when dialog opening -->
+        <!--<item name="android:windowEnterAnimation">@anim/slide_up</item> -->
+        <!--<item name="android:windowExitAnimation">@anim/slide_down</item> -->
     </style>
 </resources>
