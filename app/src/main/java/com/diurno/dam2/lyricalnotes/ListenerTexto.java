@@ -123,33 +123,45 @@ public class ListenerTexto implements ActionMode.Callback {
     }
 
     public void mostrarRimas() {
-        CharSequence[] rimas = listaRimas.toArray(new CharSequence[listaRimas.size()]);
-        AlertDialog.Builder builder = new AlertDialog.Builder(context);
-        builder.setTitle("Selecciona una palabra")
-                .setPositiveButton("Insertar", new DialogInterface.OnClickListener() {
-                    @Override
-                    public void onClick(DialogInterface dialog, int which) {
-                        etxtContenido.getText().insert(etxtContenido.getSelectionEnd(), " " + listaRimas.get(rimaSeleccionada));
-                        //etxtContenido.append(listaRimas.get(rimaSeleccionada));
-                    }
-                })
-                .setNegativeButton("Cancelar", new DialogInterface.OnClickListener() {
-                    @Override
-                    public void onClick(DialogInterface dialog, int which) {
+        if (listaRimas.size() == 0) {
+            AlertDialog.Builder builder = new AlertDialog.Builder(context);
+            builder.setTitle("No se han encontrado rimas ")
+                    .setPositiveButton("Aceptar", new DialogInterface.OnClickListener() {
+                        @Override
+                        public void onClick(DialogInterface dialog, int which) {
 
-                    }
-                })
-                .setSingleChoiceItems(rimas, rimaSeleccionada, new DialogInterface.OnClickListener() {
-                    @Override
-                    public void onClick(DialogInterface dialog, int which) {
-                        System.out.println(which);
-                        rimaSeleccionada = which;
+                        }
+                    })
+                    .create().show();
+        } else {
+            CharSequence[] rimas = listaRimas.toArray(new CharSequence[listaRimas.size()]);
+            AlertDialog.Builder builder = new AlertDialog.Builder(context);
+            builder.setTitle("Selecciona una palabra")
+                    .setPositiveButton("Insertar", new DialogInterface.OnClickListener() {
+                        @Override
+                        public void onClick(DialogInterface dialog, int which) {
+                            etxtContenido.getText().insert(etxtContenido.getSelectionEnd(), " " + listaRimas.get(rimaSeleccionada));
+                            //etxtContenido.append(listaRimas.get(rimaSeleccionada));
+                        }
+                    })
+                    .setNegativeButton("Cancelar", new DialogInterface.OnClickListener() {
+                        @Override
+                        public void onClick(DialogInterface dialog, int which) {
 
-                    }
-                })
-                .create().show();
+                        }
+                    })
+                    .setSingleChoiceItems(rimas, rimaSeleccionada, new DialogInterface.OnClickListener() {
+                        @Override
+                        public void onClick(DialogInterface dialog, int which) {
+                            System.out.println(which);
+                            rimaSeleccionada = which;
+
+                        }
+                    })
+                    .create().show();
+        }
     }
-    }
+}
 
 
 

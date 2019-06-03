@@ -5,10 +5,12 @@ import java.io.Serializable;
 public class Audio implements Serializable {
     private String data;
     private String title;
+    private String fecha;
 
-    public Audio(String data, String title) {
+    public Audio(String data, String title, String fecha) {
         this.data = data;
         this.title = title;
+        this.fecha = fecha;
     }
 
     public String getData() {
@@ -25,5 +27,13 @@ public class Audio implements Serializable {
 
     public void setTitle(String title) {
         this.title = title;
+    }
+
+    public String getFecha() {
+        return fecha;
+    }
+
+    public void setFecha(String fecha) {
+        this.fecha = fecha;
     }
 }

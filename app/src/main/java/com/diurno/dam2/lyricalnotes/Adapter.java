@@ -71,12 +71,12 @@ public class Adapter extends RecyclerView.Adapter<RecyclerView.ViewHolder>  {
 
     @Override
     public int getItemViewType(int position) {
-         if (listaObjetos.get(position) instanceof Nota) {
-             return NOTAS;
-         } else if (listaObjetos.get(position) instanceof Audio) {
-             return AUDIOS;
-         }
-         return  -1;
+        if (listaObjetos.get(position) instanceof Nota) {
+            return NOTAS;
+        } else if (listaObjetos.get(position) instanceof Audio) {
+            return AUDIOS;
+        }
+        return  -1;
     }
 
     public void prepararNotaViewHolder(final NotaViewHolder notaViewHolder, int position) {
@@ -109,6 +109,7 @@ public class Adapter extends RecyclerView.Adapter<RecyclerView.ViewHolder>  {
         Audio audio = (Audio) listaObjetos.get(position);
         String title = audio.getTitle();
         audioViewHolder.textView.setText(title);
+        audioViewHolder.fecha.setText(audio.getFecha());
     }
 
 
@@ -141,13 +142,13 @@ public class Adapter extends RecyclerView.Adapter<RecyclerView.ViewHolder>  {
     class AudioViewHolder extends RecyclerView.ViewHolder {
         ImageView imageView;
         TextView textView;
-        ProgressBar progressBar;
+        TextView fecha;
         CardView cardView;
         public AudioViewHolder(@NonNull View itemView, final RecyclerViewClickListener recyclerViewClickListener) {
             super(itemView);
             imageView = itemView.findViewById(R.id.imgPlayStop);
             textView = itemView.findViewById(R.id.txtTituloAudio);
-            progressBar = itemView.findViewById(R.id.progressBar);
+            fecha = itemView.findViewById(R.id.txtFecha);
             cardView = itemView.findViewById(R.id.card_view_grabaciones);
             imageView.setOnClickListener(new View.OnClickListener() {
                 @Override

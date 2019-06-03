@@ -12,4 +12,5 @@
     <string name="correo_electronico">Correo electrónico</string>
     <string name="confirmar_contrasena">Confirmar contraseña</string>
     <string name="nombre_estructura">Nombre estructura</string>
+    <string name="info">Info</string>
 </resources>

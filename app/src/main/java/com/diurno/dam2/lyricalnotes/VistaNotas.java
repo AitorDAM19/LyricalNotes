@@ -1,7 +1,6 @@
 package com.diurno.dam2.lyricalnotes;
 
 import android.Manifest;
-import android.app.ActionBar;
 import android.content.BroadcastReceiver;
 import android.content.ComponentName;
 import android.content.Context;
@@ -11,11 +10,6 @@ import android.content.IntentFilter;
 import android.content.ServiceConnection;
 import android.content.pm.PackageManager;
 import android.graphics.Canvas;
-import android.graphics.Paint;
-import android.graphics.PorterDuff;
-import android.graphics.PorterDuffXfermode;
-import android.graphics.Rect;
-import android.graphics.drawable.Drawable;
 import android.media.MediaRecorder;
 import android.net.Uri;
 import android.os.Bundle;
@@ -34,11 +28,9 @@ import androidx.recyclerview.widget.RecyclerView;
 import androidx.recyclerview.widget.StaggeredGridLayoutManager;
 import androidx.recyclerview.widget.ItemTouchHelper;
 
-import android.os.Environment;
 import android.os.IBinder;
 import android.provider.Settings;
 import android.text.InputType;
-import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
@@ -62,6 +54,9 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.Writer;
+import java.sql.Date;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Stack;
@@ -69,7 +64,7 @@ import java.util.Stack;
 public class VistaNotas extends AppCompatActivity implements View.OnClickListener, RecyclerViewClickListener {
     public static final String Broadcast_PLAY_NEW_AUDIO = "com.diurno.dam2.lyricalnotes.PlayNewAudio";
     public static final String Broadcast_STOP_AUDIO = "com.diurno.dam2.lyricalnotes.StopAudio";
-    private static final int RECORD_AUDIO_PÈRMISSION_REQUEST = 2;
+    private static final int RECORD_AUDIO_PERMISSION_REQUEST = 2;
     private RecyclerView recyclerView;
     private List<Object> listaObjetos;
     private List<File> audioFiles;
@@ -133,7 +128,7 @@ public class VistaNotas extends AppCompatActivity implements View.OnClickListene
         };
 
         new ItemTouchHelper(simpleItemTouchCallback).attachToRecyclerView(recyclerView);
-       register_finishedAudio();
+        register_finishedAudio();
     }
 
     @Override
@@ -156,11 +151,25 @@ public class VistaNotas extends AppCompatActivity implements View.OnClickListene
                 checkPermission();
                 return true;
             case R.id.logout:
-                FirebaseAuth auth = FirebaseAuth.getInstance();
-                auth.signOut();
-                Intent intent = new Intent(this, MainActivity.class);
-                startActivity(intent);
-                finish();
+                AlertDialog.Builder builder = new AlertDialog.Builder(this);
+                builder.setTitle("¿Seguro que quieres salir?");
+
+                builder.setPositiveButton("Salir", new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+                        FirebaseAuth auth = FirebaseAuth.getInstance();
+                        auth.signOut();
+                        Intent intent = new Intent(VistaNotas.this, MainActivity.class);
+                        startActivity(intent);
+                        finish();
+                    }
+                }).setNegativeButton("Cancelar", new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+                        dialog.cancel();
+                    }
+                }).show();
+                return true;
             default:
                 return super.onOptionsItemSelected(item);
         }
@@ -288,12 +297,7 @@ public class VistaNotas extends AppCompatActivity implements View.OnClickListene
         createAudioDir();
         cargarAudios();
 
-        if (myAudioRecorder == null) {
-            myAudioRecorder = new MediaRecorder();
-            myAudioRecorder.setAudioSource(MediaRecorder.AudioSource.MIC);
-            myAudioRecorder.setOutputFormat(MediaRecorder.OutputFormat.THREE_GPP);
-            myAudioRecorder.setAudioEncoder(MediaRecorder.OutputFormat.AMR_NB);
-        }
+        inicializarMediaRecorder();
 
     }
 
@@ -304,8 +308,6 @@ public class VistaNotas extends AppCompatActivity implements View.OnClickListene
             MediaPlayerService.LocalBinder binder = (MediaPlayerService.LocalBinder) service;
             player = binder.getService();
             serviceBound = true;
-
-            Toast.makeText(VistaNotas.this, "Service Bound", Toast.LENGTH_SHORT).show();
         }
 
         @Override
@@ -337,8 +339,17 @@ public class VistaNotas extends AppCompatActivity implements View.OnClickListene
         listaObjetos.clear();
         for (int i = 0; i < archivos.length; i++) {
             File audioFile = archivos[i];
+            String nombreArchivo = audioFile.getName();
+            System.out.println(nombreArchivo);
+            String[] array = nombreArchivo.split("#");
+            String titulo = array[0];
+            String fecha = array[1].substring(0, array[1].length() - 4);
+            DateFormat sdf = SimpleDateFormat.getDateTimeInstance(DateFormat.MEDIUM, DateFormat.SHORT);
+            Date date = new Date(Long.parseLong(fecha));
+            fecha = sdf.format(date);
             System.out.println("Nombre del archivo: " + audioFile.getName());
-            listaObjetos.add(new Audio(archivos[i].getAbsolutePath(), audioFile.getName().substring(0, audioFile.getName().length() - 4)));
+            //audioFile.getName().substring(0, audioFile.getName().length() - 4))
+            listaObjetos.add(new Audio(archivos[i].getAbsolutePath(), titulo, fecha));
             audioFiles.add(audioFile);
 
         }
@@ -403,12 +414,12 @@ public class VistaNotas extends AppCompatActivity implements View.OnClickListene
 
     private void requestPermission() {
         final String[] permissions = new String[]{ Manifest.permission.RECORD_AUDIO};
-        ActivityCompat.requestPermissions(VistaNotas.this, permissions, RECORD_AUDIO_PÈRMISSION_REQUEST);
+        ActivityCompat.requestPermissions(VistaNotas.this, permissions, RECORD_AUDIO_PERMISSION_REQUEST);
     }
 
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permission, @NonNull  int[] grantResults) {
         switch (requestCode) {
-            case RECORD_AUDIO_PÈRMISSION_REQUEST: {
+            case RECORD_AUDIO_PERMISSION_REQUEST: {
                 if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
                     setUpLayoutGrabaciones();
                     System.out.println("Se ejecutó onRequestPermissionsResult");
@@ -454,6 +465,11 @@ public class VistaNotas extends AppCompatActivity implements View.OnClickListene
             iniciar();
         } else if (layoutAudios && !grabandoAudio) {
             System.out.println("Se entro al else if de layoutAudios");
+            inicializarMediaRecorder();
+            if (reproduciendoAudio) {
+                lastPlayedImageView.setImageResource(R.drawable.play_48);
+                stopAudio(lastPlayedIndex);
+            }
             AlertDialog.Builder builder = new AlertDialog.Builder(this);
             builder.setTitle("Título de la grabación");
 
@@ -461,13 +477,14 @@ public class VistaNotas extends AppCompatActivity implements View.OnClickListene
             input.setInputType(InputType.TYPE_CLASS_TEXT);
             input.setHint("Escribe un título");
             builder.setView(input);
-
             builder.setPositiveButton("Guardar", new DialogInterface.OnClickListener() {
                 @Override
                 public void onClick(DialogInterface dialog, int which) {
                     String titulo = input.getText().toString();
-                    System.out.println("Outputfile: " + getFilesDir().getPath() + File.separator + UID + File.separator + titulo + ".3gp");
-                    myAudioRecorder.setOutputFile(getFilesDir().getPath() + File.separator + UID + File.separator + "Grabaciones" + File.separator + titulo + ".3gp");
+                    int longitudTitulo = titulo.length();
+                    String tituloConFecha = titulo + "#" + System.currentTimeMillis();
+                    System.out.println("Outputfile: " + getFilesDir().getPath() + File.separator + UID + File.separator + tituloConFecha + ".3gp");
+                    myAudioRecorder.setOutputFile(getFilesDir().getPath() + File.separator + UID + File.separator + "Grabaciones" + File.separator + tituloConFecha + ".3gp");
                     try {
                         myAudioRecorder.prepare();
                         myAudioRecorder.start();
@@ -590,11 +607,11 @@ public class VistaNotas extends AppCompatActivity implements View.OnClickListene
                     db.borrarNotaUID(notaBorrada.getIdNota());
                     cargarNotas2();
                 }
-                fab.setY(fab.getY() + 80);
+                fab.setY(fab.getY() + 110);
             }
         });
         snackbar.show();
-        fab.setY(fab.getY() - 80);
+        fab.setY(fab.getY() - 110);
     }
 
     private void swipeAudio(RecyclerView.ViewHolder viewHolder, final int i) {
@@ -626,11 +643,11 @@ public class VistaNotas extends AppCompatActivity implements View.OnClickListene
                         System.out.println("No se borró");
                     }
                 }
-                fab.setY(fab.getY() + 80);
+                fab.setY(fab.getY() + 110);
             }
         });
         snackbar.show();
-        fab.setY(fab.getY() - 80);
+        fab.setY(fab.getY() - 110);
     }
 
 
@@ -640,37 +657,46 @@ public class VistaNotas extends AppCompatActivity implements View.OnClickListene
         System.out.println("Ruta a la carpeta Estructuras: " + file.getAbsolutePath());
         if (!file.exists()) {
             boolean seCreo = file.mkdir();
-           if (seCreo) {
-               System.out.println("Se creo la carpeta Estructuras");
-               InputStream is =  getResources().openRawResource(R.raw.structures);
-               BufferedReader br = new BufferedReader(new InputStreamReader(is));
-               StringBuilder sb = new StringBuilder();
-               String resultado = null;
-               String line = null;
-               try {
-                   while ((line = br.readLine()) != null) {
-                       sb.append(line + "\n");
-                   }
-                   resultado = sb.toString();
-                   JSONObject jsonObject = new JSONObject(resultado);
-                   File archivoJson = new File(file, "structures.json");
-                   System.out.println("Ruta al archivo json: " + archivoJson.getAbsolutePath());
-                   System.out.println("Contenido del JSON de RAW: " + resultado);
-                   System.out.println("Contenido del objeto JSON: " + jsonObject.toString());
-                   if (!archivoJson.exists()) {
-                       boolean seCreoJson = archivoJson.createNewFile();
-                       if (seCreoJson) {
-                           System.out.println("SE CREO EL .JSON!!!");
-                           Writer output = new BufferedWriter(new FileWriter(archivoJson));
-                           output.write(jsonObject.toString());
-                           output.close();
-                       }
-                   }
+            if (seCreo) {
+                System.out.println("Se creo la carpeta Estructuras");
+                InputStream is =  getResources().openRawResource(R.raw.structures);
+                BufferedReader br = new BufferedReader(new InputStreamReader(is));
+                StringBuilder sb = new StringBuilder();
+                String resultado = null;
+                String line = null;
+                try {
+                    while ((line = br.readLine()) != null) {
+                        sb.append(line + "\n");
+                    }
+                    resultado = sb.toString();
+                    JSONObject jsonObject = new JSONObject(resultado);
+                    File archivoJson = new File(file, "structures.json");
+                    System.out.println("Ruta al archivo json: " + archivoJson.getAbsolutePath());
+                    System.out.println("Contenido del JSON de RAW: " + resultado);
+                    System.out.println("Contenido del objeto JSON: " + jsonObject.toString());
+                    if (!archivoJson.exists()) {
+                        boolean seCreoJson = archivoJson.createNewFile();
+                        if (seCreoJson) {
+                            System.out.println("SE CREO EL .JSON!!!");
+                            Writer output = new BufferedWriter(new FileWriter(archivoJson));
+                            output.write(jsonObject.toString());
+                            output.close();
+                        }
+                    }
 
-               } catch (IOException |JSONException ioe) {
-                   ioe.printStackTrace();
-               }
-           }
+                } catch (IOException |JSONException ioe) {
+                    ioe.printStackTrace();
+                }
+            }
+        }
+    }
+
+    private void inicializarMediaRecorder() {
+        if (myAudioRecorder == null) {
+            myAudioRecorder = new MediaRecorder();
+            myAudioRecorder.setAudioSource(MediaRecorder.AudioSource.MIC);
+            myAudioRecorder.setOutputFormat(MediaRecorder.OutputFormat.THREE_GPP);
+            myAudioRecorder.setAudioEncoder(MediaRecorder.OutputFormat.AMR_NB);
         }
     }
 }

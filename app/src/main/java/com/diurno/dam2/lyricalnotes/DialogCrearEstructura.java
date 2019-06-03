@@ -14,14 +14,11 @@ import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.Spinner;
-import android.widget.SpinnerAdapter;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
-import androidx.appcompat.app.ActionBar;
-import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
 import androidx.fragment.app.DialogFragment;
 
@@ -36,10 +33,7 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.io.OutputStream;
-import java.io.OutputStreamWriter;
 import java.io.Writer;
 import java.util.ArrayList;
 import java.util.List;
@@ -51,7 +45,7 @@ public class DialogCrearEstructura extends DialogFragment {
     private TextView txtVistaPrevia;
     private Button btnAnadir, btnBorrar, btnBorrarTodo;
     private Spinner spinner;
-    private List<String> texto;
+    private List<String> listaContenidos;
     private List<String> itemsEstructura;
     private String UID;
     @Override
@@ -68,7 +62,7 @@ public class DialogCrearEstructura extends DialogFragment {
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
         super.onCreateView(inflater, container, savedInstanceState);
         View view = inflater.inflate(R.layout.layout_crear_estructura, container, false);
-        texto = new ArrayList<>();
+        listaContenidos = new ArrayList<>();
         itemsEstructura = new ArrayList<>();
         Toolbar toolbar = view.findViewById(R.id.toolbar);
         toolbar.setTitle("Crear estructura");
@@ -142,7 +136,7 @@ public class DialogCrearEstructura extends DialogFragment {
         btnAnadir.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                texto.add(txtVistaPrevia.getText().toString());
+                listaContenidos.add(txtVistaPrevia.getText().toString());
                 itemsEstructura.add(spinner.getSelectedItem().toString());
                 String seleccionado = spinner.getSelectedItem().toString();
                 txtVistaPrevia.append(seleccionado + "\n\n");
@@ -152,10 +146,10 @@ public class DialogCrearEstructura extends DialogFragment {
         btnBorrar.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                if (texto.size() > 0) {
-                    String ultimoTexto = texto.get(texto.size() - 1);
+                if (listaContenidos.size() > 0) {
+                    String ultimoTexto = listaContenidos.get(listaContenidos.size() - 1);
                     txtVistaPrevia.setText(ultimoTexto);
-                    texto.remove(texto.size() - 1);
+                    listaContenidos.remove(listaContenidos.size() - 1);
                     itemsEstructura.remove(itemsEstructura.size() - 1);
                 }
             }
@@ -165,10 +159,12 @@ public class DialogCrearEstructura extends DialogFragment {
             @Override
             public void onClick(View v) {
                 txtVistaPrevia.setText("");
+                itemsEstructura.clear();
+                listaContenidos.clear();
             }
         });
         spinner = view.findViewById(R.id.spinner);
-        ArrayAdapter<CharSequence> arrayAdapter = ArrayAdapter.createFromResource(getContext(), R.array.secciones, android.R.layout.simple_spinner_item);
+        ArrayAdapter<CharSequence> arrayAdapter = ArrayAdapter.createFromResource(getContext(), R.array.secciones, android.R.layout.simple_spinner_dropdown_item);
         arrayAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
         spinner.setAdapter(arrayAdapter);
         return view;
@@ -199,8 +195,4 @@ public class DialogCrearEstructura extends DialogFragment {
         return super.onOptionsItemSelected(item);
     }
 
-    private void writeToJson(String json) {
-
-
-    }
 }

@@ -1,7 +1,10 @@
 package com.diurno.dam2.lyricalnotes;
 
+import android.content.DialogInterface;
 import android.os.Bundle;
 import androidx.annotation.Nullable;
+import androidx.appcompat.app.ActionBar;
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import android.text.Html;
 import android.view.Menu;
@@ -20,8 +23,11 @@ public class CrearNota extends AppCompatActivity {
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.layout_crear_nota);
-        getSupportActionBar().setDisplayHomeAsUpEnabled(true);
-        getSupportActionBar().setDisplayShowHomeEnabled(true);
+        ActionBar actionBar = getSupportActionBar();
+        if (actionBar != null) {
+            actionBar.setDisplayHomeAsUpEnabled(true);
+            actionBar.setDisplayShowHomeEnabled(true);
+        }
         etxtTitulo = findViewById(R.id.etxtTitulo);
         etxtContenido = findViewById(R.id.etxtContenido);
         etxtContenido.setCustomSelectionActionModeCallback(new ListenerTexto(etxtContenido, CrearNota.this));
@@ -36,6 +42,13 @@ public class CrearNota extends AppCompatActivity {
         etxtContenido.setText(bundle.getString("Contenido"));
         if (!etxtTitulo.getText().toString().equals("")) {
             editar = true;
+            if (actionBar != null) {
+                actionBar.setTitle("Editar nota");
+            }
+        } else {
+            if (actionBar != null) {
+                actionBar.setTitle("Crear nota");
+            }
         }
         String[] genre = bundle.getStringArray("genre");
         if (genre != null) {
@@ -64,7 +77,11 @@ public class CrearNota extends AppCompatActivity {
     @Override
     public void onBackPressed() {
         super.onBackPressed();
-        guardar();
+        if (editar) {
+            editar();
+        } else {
+            guardar();
+        }
     }
 
     /**
@@ -111,14 +128,36 @@ public class CrearNota extends AppCompatActivity {
         int id = item.getItemId();
 
         switch (id) {
+            case R.id.info:
+                mostrarInfo();
+                return true;
             case R.id.borrarNota:
-                    borrarNota();
+                borrarNota();
                 return true;
             case android.R.id.home:
-                 guardar();
-                 finish();
+                if (editar) {
+                    editar();
+                } else {
+                    guardar();
+                }
+                finish();
             default:
                 return super.onOptionsItemSelected(item);
         }
+    }
+
+
+    private void mostrarInfo() {
+       AlertDialog builder = new AlertDialog.Builder(this)
+                .setTitle("Información")
+                .setIcon(R.drawable.ic_info_black_24)
+               .setMessage("Prueba a buscar una rima seleccionando una palabra y luego pulsa en Buscar rima")
+                .setNeutralButton("Aceptar", new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+                        dialog.dismiss();
+                    }
+                }).create();
+       builder.show();
     }
 }
