@@ -45,12 +45,11 @@ public class ListenerTexto implements ActionMode.Callback {
 
     @Override
     public boolean onActionItemClicked(ActionMode mode, MenuItem item) {
-        int start = etxtContenido.getSelectionStart();
-        int end = etxtContenido.getSelectionEnd();
-        final String texto = etxtContenido.getText().toString().substring(start, end);
-        System.out.println(texto);
         switch (item.getItemId()) {
             case R.id.buscar_rima:
+                int start = etxtContenido.getSelectionStart();
+                int end = etxtContenido.getSelectionEnd();
+                final String texto = etxtContenido.getText().toString().substring(start, end).trim();
                 listaRimas.clear();
                 List<String> listaIdiomas = new ArrayList<>();
                 listaIdiomas.add("Español");
@@ -68,7 +67,8 @@ public class ListenerTexto implements ActionMode.Callback {
                                 } else if (idiomaSeleccionado == 1) {
                                     url = "https://api.datamuse.com/words?rel_rhy=" + texto + "&max=20";
                                 }
-                                JsonArrayRequest jsonObjectRequest = new JsonArrayRequest(Request.Method.GET, url, null, new Response.Listener<JSONArray>() {
+                                JsonArrayRequest jsonObjectRequest = new JsonArrayRequest(Request.Method.GET, url,
+                                        null, new Response.Listener<JSONArray>() {
                                     @Override
                                     public void onResponse(JSONArray response) {
                                         try {

@@ -14,7 +14,6 @@ import android.widget.Toast;
 
 public class CrearNota extends AppCompatActivity {
     private int idNota;
-    private int idUsuario;
     private String UID;
     private EditText etxtTitulo;
     private EditText etxtContenido;
@@ -30,14 +29,14 @@ public class CrearNota extends AppCompatActivity {
         }
         etxtTitulo = findViewById(R.id.etxtTitulo);
         etxtContenido = findViewById(R.id.etxtContenido);
-        etxtContenido.setCustomSelectionActionModeCallback(new ListenerTexto(etxtContenido, CrearNota.this));
+        etxtContenido.setCustomSelectionActionModeCallback(
+                new ListenerTexto(etxtContenido, CrearNota.this));
         editar  = false;
         Bundle bundle = getIntent().getExtras();
 
         //idUsuario = bundle.getInt("idUsu");
         UID = bundle.getString("uid");
         idNota = bundle.getInt("idNota");
-        idUsuario = bundle.getInt("idUsu");
         etxtTitulo.setText(bundle.getString("Titulo"));
         etxtContenido.setText(bundle.getString("Contenido"));
         if (!etxtTitulo.getText().toString().equals("")) {
@@ -53,18 +52,16 @@ public class CrearNota extends AppCompatActivity {
         String[] genre = bundle.getStringArray("genre");
         if (genre != null) {
             System.out.println(genre.length);
-            String cadenaNegrita = null;
+            String cadena = null;
             StringBuilder sb = new StringBuilder();
             for (int i = 0; i < genre.length; i++) {
-                //String cadenaBold = "<b>" + genre[i] + "</b>";
-                sb.append("<b>" + genre[i] + "</b>");
+                sb.append(genre[i]);
                 sb.append("<br/>");
                 sb.append("<br/>");
-                //etxtContenido.append(Html.fromHtml(cadenaBold) + "\n\n");
             }
-            cadenaNegrita = sb.toString();
-            System.out.println(cadenaNegrita);
-            etxtContenido.setText(Html.fromHtml(cadenaNegrita));
+            cadena = sb.toString();
+            System.out.println(cadena);
+            etxtContenido.setText(Html.fromHtml(cadena));
         }
     }
 

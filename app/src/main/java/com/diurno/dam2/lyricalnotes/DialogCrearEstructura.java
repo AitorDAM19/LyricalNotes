@@ -80,13 +80,16 @@ public class DialogCrearEstructura extends DialogFragment {
             public boolean onMenuItemClick(MenuItem item) {
                 if (item.getItemId() == R.id.guardar_estructura) {
                     if (nombreEstructura.getText().toString().isEmpty()) {
-                        Toast.makeText(getContext(), "No puedes dejar el nombre vacío", Toast.LENGTH_SHORT).show();
+                        Toast.makeText(getContext(),
+                                "No puedes dejar el nombre vacío", Toast.LENGTH_SHORT).show();
                         return false;
                     } else if (itemsEstructura.size() == 0) {
-                        Toast.makeText(getContext(), "No puedes crear una estructura vacía", Toast.LENGTH_SHORT).show();
+                        Toast.makeText(getContext(),
+                                "No puedes crear una estructura vacía", Toast.LENGTH_SHORT).show();
                         return false;
                     } else {
-                        File file = new File(getContext().getFilesDir().getAbsolutePath() + "/" + UID + "/Estructuras", "structures.json");
+                        File file = new File(getContext().getFilesDir().getAbsolutePath()
+                                + "/" + UID + "/Estructuras", "structures.json");
                         FileInputStream fis = null;
                         try {
                             fis = new FileInputStream(file);
@@ -105,7 +108,8 @@ public class DialogCrearEstructura extends DialogFragment {
                             JSONObject jsonObject = new JSONObject(resultado);
                             JSONArray structures = jsonObject.getJSONArray("structures");
                             JSONObject jsonEstructura = new JSONObject();
-                            jsonEstructura.put("genero", nombreEstructura.getText().toString().trim());
+                            jsonEstructura.put("genero", nombreEstructura.getText().
+                                    toString().trim());
                             String items = "";
                             for (String string : itemsEstructura) {
                                 items += string + ",";
@@ -185,14 +189,6 @@ public class DialogCrearEstructura extends DialogFragment {
     public void onCreateOptionsMenu(Menu menu, MenuInflater inflater) {
         menu.clear();
         getActivity().getMenuInflater().inflate(R.menu.crear_estructura, menu);
-    }
-
-    @Override
-    public boolean onOptionsItemSelected(MenuItem item) {
-        if (item.getItemId() == R.id.guardar_estructura) {
-            Toast.makeText(getActivity(), "Boo", Toast.LENGTH_LONG).show();
-        }
-        return super.onOptionsItemSelected(item);
     }
 
 }

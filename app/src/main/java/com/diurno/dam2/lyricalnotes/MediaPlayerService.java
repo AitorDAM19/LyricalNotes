@@ -146,6 +146,8 @@ public class MediaPlayerService extends Service implements MediaPlayer.OnComplet
 
             //Get the new media index form SharedPreferences
             audioIndex = new StorageUtil(getApplicationContext()).loadAudioIndex();
+            audioList.clear();
+            audioList.addAll(new StorageUtil(getApplicationContext()).loadAudio());
             if (audioIndex != -1 && audioIndex < audioList.size()) {
                 //index is in a valid range
                 activeAudio = audioList.get(audioIndex);
@@ -167,8 +169,12 @@ public class MediaPlayerService extends Service implements MediaPlayer.OnComplet
         @Override
         public void onReceive(Context context, Intent intent) {
             audioIndex = new StorageUtil(getApplicationContext()).loadAudioIndex();
+            audioList.clear();
+            audioList.addAll(new StorageUtil(getApplicationContext()).loadAudio());
+            System.out.println("Index del audio a parar: " + audioIndex);
             if (activeAudio.equals(audioList.get(audioIndex))) {
                 stopMedia();
+                //audioIndex = -1;
                 //mediaPlayer.reset();
                 //initMediaPlayer();
             } else {
@@ -198,11 +204,12 @@ public class MediaPlayerService extends Service implements MediaPlayer.OnComplet
     @Override
     public void onCompletion(MediaPlayer mp) {
         //Invoked when playback of a media source has completed.
+        System.out.println("Se ejecutó onCompletion");
         stopMedia();
         Intent broadcastIntent = new Intent(Broadcast_FINISHED_AUDIO);
         sendBroadcast(broadcastIntent);
         //stop the service
-        stopSelf();
+        //stopSelf();
     }
 
     //Handle errors

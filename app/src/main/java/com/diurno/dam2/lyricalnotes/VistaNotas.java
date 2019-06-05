@@ -78,9 +78,12 @@ public class VistaNotas extends AppCompatActivity implements View.OnClickListene
     private boolean serviceBound = false;
     private static Adapter adapter;
     private MediaRecorder myAudioRecorder;
+    private boolean isSnackbarAudioShowed = false;
+    private File audioABorrar;
     private boolean layoutNotas = true, layoutAudios = false, grabandoAudio = false;
     private boolean reproduciendoAudio = false;
-    private Snackbar snackbar;
+    private Snackbar snackbarNota;
+    private Snackbar snackbarAudio;
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
@@ -120,9 +123,9 @@ public class VistaNotas extends AppCompatActivity implements View.OnClickListene
             @Override
             public void onSwiped(@NonNull RecyclerView.ViewHolder viewHolder, int i) {
                 if (layoutNotas) {
-                    swipeNota(viewHolder, i);
+                    swipeNota(viewHolder);
                 } else if (layoutAudios) {
-                    swipeAudio(viewHolder, i);
+                    swipeAudio(viewHolder);
                 }
             }
         };
@@ -142,12 +145,18 @@ public class VistaNotas extends AppCompatActivity implements View.OnClickListene
         int id = item.getItemId();
         switch (id) {
             case R.id.notas:
+                if (isSnackbarAudioShowed) {
+                    borrarAudio(audioABorrar);
+                }
                 fab.setImageResource(R.drawable.editar_24);
                 layoutAudios = false;
                 layoutNotas = true;
                 cargarNotas2();
                 return true;
             case R.id.grabaciones:
+                if (isSnackbarAudioShowed) {
+                    borrarAudio(audioABorrar);
+                }
                 checkPermission();
                 return true;
             case R.id.logout:
@@ -211,7 +220,8 @@ public class VistaNotas extends AppCompatActivity implements View.OnClickListene
     }
 
     public void iniciar() {
-        File file = new File(getFilesDir().getAbsolutePath() + "/" + UID + "/Estructuras", "structures.json");
+        File file = new File(getFilesDir().getAbsolutePath() +
+                "/" + UID + "/Estructuras", "structures.json");
         FileInputStream fis = null;
         try {
             fis = new FileInputStream(file);
@@ -287,8 +297,8 @@ public class VistaNotas extends AppCompatActivity implements View.OnClickListene
     }
 
     public void setUpLayoutGrabaciones() {
-        if (snackbar != null) {
-            snackbar.dismiss();
+        if (snackbarNota != null) {
+            snackbarNota.dismiss();
         }
         fab.setImageResource(R.drawable.microfono_24);
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
@@ -337,6 +347,7 @@ public class VistaNotas extends AppCompatActivity implements View.OnClickListene
         File audios = new File(file, "Grabaciones");
         File[] archivos = audios.listFiles();
         listaObjetos.clear();
+        audioFiles.clear();
         for (int i = 0; i < archivos.length; i++) {
             File audioFile = archivos[i];
             String nombreArchivo = audioFile.getName();
@@ -379,6 +390,7 @@ public class VistaNotas extends AppCompatActivity implements View.OnClickListene
             startService(playerIntent);
             bindService(playerIntent, serviceConnection, Context.BIND_AUTO_CREATE);
         } else {
+            System.out.println("Audio index desde playAudio: " + audioIndex);
             //Store the new audioIndex to SharedPreferences
             StorageUtil storage = new StorageUtil(getApplicationContext());
             storage.storeAudioIndex(audioIndex);
@@ -396,6 +408,8 @@ public class VistaNotas extends AppCompatActivity implements View.OnClickListene
             storage.storeAudioIndex(audioIndex);
             Intent broadcastIntent = new Intent(Broadcast_STOP_AUDIO);
             sendBroadcast(broadcastIntent);
+            reproduciendoAudio = false;
+            System.out.println("Termino el método stopAudio de VistaNotas");
         }
     }
 
@@ -481,10 +495,9 @@ public class VistaNotas extends AppCompatActivity implements View.OnClickListene
                 @Override
                 public void onClick(DialogInterface dialog, int which) {
                     String titulo = input.getText().toString();
-                    int longitudTitulo = titulo.length();
                     String tituloConFecha = titulo + "#" + System.currentTimeMillis();
-                    System.out.println("Outputfile: " + getFilesDir().getPath() + File.separator + UID + File.separator + tituloConFecha + ".3gp");
-                    myAudioRecorder.setOutputFile(getFilesDir().getPath() + File.separator + UID + File.separator + "Grabaciones" + File.separator + tituloConFecha + ".3gp");
+                    myAudioRecorder.setOutputFile(getFilesDir().getPath() + File.separator
+                            + UID + File.separator + "Grabaciones" + File.separator + tituloConFecha + ".3gp");
                     try {
                         myAudioRecorder.prepare();
                         myAudioRecorder.start();
@@ -512,6 +525,15 @@ public class VistaNotas extends AppCompatActivity implements View.OnClickListene
             fab.setImageResource(R.drawable.microfono_24);
             grabandoAudio = false;
             cargarAudios();
+
+            ArrayList<Audio> audioList = new ArrayList<>();
+            StorageUtil storage = new StorageUtil(getApplicationContext());
+            for (Object o : listaObjetos) {
+                Audio audio = (Audio) o;
+                audioList.add(audio);
+            }
+            storage.storeAudio(audioList);
+            storage.storeAudioIndex(audioList.size() - 1);
         } else {
             System.out.println("Esto no funciona que sad man");
         }
@@ -520,6 +542,7 @@ public class VistaNotas extends AppCompatActivity implements View.OnClickListene
     private BroadcastReceiver audioFinished = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
+            System.out.println("Audio acabó?");
             lastPlayedImageView.setImageResource(R.drawable.play_48);
         }
     };
@@ -537,8 +560,8 @@ public class VistaNotas extends AppCompatActivity implements View.OnClickListene
     @Override
     public void onViewClicked(View v, int position) {
         if (v.getId() == R.id.imgPlayStop) {
+            System.out.println("Posicion del pulsado: " + position);
             ImageView imageView = (ImageView) v;
-            System.out.println("ImageView del pulsado: " + imageView.toString());
             if (!reproduciendoAudio) {
                 imageView.setImageResource(R.drawable.stop_48);
                 lastPlayedIndex = position;
@@ -546,15 +569,17 @@ public class VistaNotas extends AppCompatActivity implements View.OnClickListene
                 playAudio(position);
                 //audioIndex = position;
                 reproduciendoAudio = true;
-            } else if (reproduciendoAudio && !listaObjetos.get(position).equals(listaObjetos.get(lastPlayedIndex))) {
+            } else if (!listaObjetos.get(position).equals(listaObjetos.get(lastPlayedIndex))) {
                 System.out.println("El que se ha pulsado no es el que se está reproduciendo.");
                 stopAudio(lastPlayedIndex);
+                //reproduciendoAudio = false;
                 lastPlayedImageView.setImageResource(R.drawable.play_48);
                 lastPlayedIndex = position;
                 lastPlayedImageView = imageView;
                 playAudio(position);
                 imageView.setImageResource(R.drawable.stop_48);
             } else if (reproduciendoAudio) {
+                System.out.println("El que se ha empezado a reproducir es el mismo");
                 imageView.setImageResource(R.drawable.play_48);
                 stopAudio(position);
                 reproduciendoAudio = false;
@@ -574,7 +599,7 @@ public class VistaNotas extends AppCompatActivity implements View.OnClickListene
         }
     }
 
-    private void swipeNota(RecyclerView.ViewHolder viewHolder, int i) {
+    private void swipeNota(RecyclerView.ViewHolder viewHolder) {
         final int swipedPosition = viewHolder.getAdapterPosition();
         final UsersDatabase db = new UsersDatabase(VistaNotas.this);
         final Nota notaBorrada = (Nota) listaObjetos.get(swipedPosition);
@@ -585,7 +610,8 @@ public class VistaNotas extends AppCompatActivity implements View.OnClickListene
         listaObjetos.remove(swipedPosition);
         adapter.notifyItemRemoved(swipedPosition);
         //snackbar = null;
-        snackbar = Snackbar.make(findViewById(R.id.ConstraintLayout), "Nota borrada", 5000).setAction("Deshacer", new View.OnClickListener() {
+        snackbarNota = Snackbar.make(findViewById(R.id.ConstraintLayout), "Nota borrada", 5000).
+                setAction("Deshacer", new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 Nota nota = stackNotas.pop();
@@ -595,39 +621,31 @@ public class VistaNotas extends AppCompatActivity implements View.OnClickListene
                 adapter.notifyItemInserted(swipedPosition);
             }
         });
-        snackbar.addCallback(new Snackbar.Callback() {
-            @Override
-            public void onShown(Snackbar sb) {
-                super.onShown(sb);
-            }
-
+        snackbarNota.addCallback(new Snackbar.Callback() {
             @Override
             public void onDismissed(Snackbar transientBottomBar, int event) {
-                if (event == Snackbar.Callback.DISMISS_EVENT_TIMEOUT) {
-                    db.borrarNotaUID(notaBorrada.getIdNota());
-                    cargarNotas2();
-                }
                 fab.setY(fab.getY() + 110);
             }
         });
-        snackbar.show();
+        snackbarNota.show();
         fab.setY(fab.getY() - 110);
     }
 
-    private void swipeAudio(RecyclerView.ViewHolder viewHolder, final int i) {
+    private void swipeAudio(RecyclerView.ViewHolder viewHolder) {
         final int swipedPosition = viewHolder.getAdapterPosition();
-        final File audio = audioFiles.get(swipedPosition);
+        audioABorrar = null;
+        audioABorrar = audioFiles.get(swipedPosition);
         final Audio audio1 = (Audio) listaObjetos.get(swipedPosition);
         listaObjetos.remove(audio1);
         adapter.notifyItemRemoved(swipedPosition);
-        Snackbar snackbar = Snackbar.make(findViewById(R.id.ConstraintLayout), "Grabación borrada", 5000).setAction("Deshacer", new View.OnClickListener() {
+        snackbarAudio = Snackbar.make(findViewById(R.id.ConstraintLayout), "Grabación borrada", 5000).setAction("Deshacer", new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 listaObjetos.add(swipedPosition, audio1);
                 adapter.notifyItemInserted(swipedPosition);
             }
         });
-        snackbar.addCallback(new Snackbar.Callback() {
+        snackbarAudio.addCallback(new Snackbar.Callback() {
             @Override
             public void onShown(Snackbar sb) {
                 super.onShown(sb);
@@ -636,23 +654,29 @@ public class VistaNotas extends AppCompatActivity implements View.OnClickListene
             @Override
             public void onDismissed(Snackbar transientBottomBar, int event) {
                 if (event == Snackbar.Callback.DISMISS_EVENT_TIMEOUT) {
-                    boolean seBorro = audio.delete();
-                    if (seBorro) {
-                        System.out.println("El archivo se borró correctamente");
-                    } else {
-                        System.out.println("No se borró");
-                    }
+                    isSnackbarAudioShowed = false;
+                    borrarAudio(audioABorrar);
                 }
-                fab.setY(fab.getY() + 110);
+                fab.setY(fab.getY() + 80);
             }
         });
-        snackbar.show();
-        fab.setY(fab.getY() - 110);
+        snackbarAudio.show();
+        isSnackbarAudioShowed = true;
+        fab.setY(fab.getY() - 80);
+    }
+
+    public void borrarAudio(File file) {
+        System.out.println("Nombre del audio a borrar: " + file.getName());
+        boolean seBorro = file.delete();
+        if (seBorro) {
+            System.out.println("El archivo se borró correctamente");
+        } else {
+            System.out.println("No se borró");
+        }
     }
 
 
     private void crearDirectorioEstructuras() {
-        createAudioDir();
         File file = new File(getFilesDir().getAbsolutePath() + "/" + UID, "Estructuras");
         System.out.println("Ruta a la carpeta Estructuras: " + file.getAbsolutePath());
         if (!file.exists()) {
@@ -671,9 +695,6 @@ public class VistaNotas extends AppCompatActivity implements View.OnClickListene
                     resultado = sb.toString();
                     JSONObject jsonObject = new JSONObject(resultado);
                     File archivoJson = new File(file, "structures.json");
-                    System.out.println("Ruta al archivo json: " + archivoJson.getAbsolutePath());
-                    System.out.println("Contenido del JSON de RAW: " + resultado);
-                    System.out.println("Contenido del objeto JSON: " + jsonObject.toString());
                     if (!archivoJson.exists()) {
                         boolean seCreoJson = archivoJson.createNewFile();
                         if (seCreoJson) {

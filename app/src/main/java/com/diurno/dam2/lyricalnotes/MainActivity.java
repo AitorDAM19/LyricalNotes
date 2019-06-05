@@ -37,13 +37,11 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.login_activity);
         auth = FirebaseAuth.getInstance();
         FirebaseUser user = auth.getCurrentUser();
-        if (user == null) {
-            loginNuevo();
+        if (user != null) {
+            iniciarUID(user.getUid());
         }
         else {
-            String email = user.getEmail();
-            UsersDatabase udb = new UsersDatabase(MainActivity.this);
-            iniciarUID(user.getUid());
+            loginNuevo();
         }
     }
 
@@ -62,33 +60,32 @@ public class MainActivity extends AppCompatActivity {
         btnLogin.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-
-
                 final String user = etxtEmail.getText().toString();
                 String pass = etxtPass.getText().toString();
-                /*if (udb.buscarUsuario(user, pass)) {
-                    iniciar(udb.idUsuario(user));
-                    udb.close();
+                if (user.isEmpty() || pass.isEmpty()) {
+                    Toast.makeText(MainActivity.this, "No puedes dejar campos vacíos",
+                            Toast.LENGTH_SHORT).show();
+                    return;
                 }
-                else {
-                    Toast.makeText(MainActivity.this, "Usuario o contraseña incorrectos.", Toast.LENGTH_LONG).show();
-                }*/
                 showProgressDialog();
-                auth.signInWithEmailAndPassword(user, pass).addOnCompleteListener(MainActivity.this, new OnCompleteListener<AuthResult>() {
-                    @Override
-                    public void onComplete(@NonNull Task<AuthResult> task) {
-                        if (task.isSuccessful()) {
-                            FirebaseUser firebaseUser = auth.getCurrentUser();
-                            String UID = firebaseUser.getUid();
-                            final UsersDatabase udb = new UsersDatabase(MainActivity.this);
-                            iniciarUID(UID);
-                        } else {
-                            Log.w(MainActivity.class.getSimpleName(), "signInWithEmail:failure", task.getException());
-                            Toast.makeText(MainActivity.this, "Correo electrónico o contraseña incorrectos.", Toast.LENGTH_LONG).show();
-                        }
-                        hideProgressDialog();
-                    }
-                });
+                Task<AuthResult> authResultTask = auth.signInWithEmailAndPassword(user, pass);
+                authResultTask.addOnCompleteListener(MainActivity.this,
+                        new OnCompleteListener<AuthResult>() {
+                            @Override
+                            public void onComplete(@NonNull Task<AuthResult> task) {
+                                if (task.isSuccessful()) {
+                                    FirebaseUser firebaseUser = auth.getCurrentUser();
+                                    String UID = firebaseUser.getUid();
+                                    final UsersDatabase udb = new UsersDatabase(MainActivity.this);
+                                    iniciarUID(UID);
+                                } else {
+                                    Log.w(MainActivity.class.getSimpleName(), "signInWithEmail:failure", task.getException());
+                                    Toast.makeText(MainActivity.this,
+                                            "Correo electrónico o contraseña incorrectos.", Toast.LENGTH_LONG).show();
+                                }
+                                hideProgressDialog();
+                            }
+                        });
             }
         });
 
@@ -97,7 +94,6 @@ public class MainActivity extends AppCompatActivity {
             public void onClick(View v) {
                 Intent intent = new Intent(MainActivity.this, SignupActivity.class);
                 startActivityForResult(intent, 0);
-                //finish();
             }
         });
     }
@@ -106,14 +102,7 @@ public class MainActivity extends AppCompatActivity {
     protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
         if (requestCode == 0) {
             if (resultCode == RESULT_OK) {
-                //String email =  data.getStringExtra("email");
-                //String pass = data.getStringExtra("pass");
                 String UID = data.getStringExtra("uid");
-                //UsersDatabase udb = new UsersDatabase(MainActivity.this);
-                /*if (udb.buscarUsuario(email, pass)) {
-                    iniciar(udb.idUsuario(email));
-                    udb.close();
-                }*/
                 iniciarUID(UID);
             }
         }
