@@ -219,6 +219,19 @@ public class VistaNotas extends AppCompatActivity implements View.OnClickListene
         unregisterReceiver(audioFinished);
     }
 
+
+    // Notas
+    /**
+     * Carga todas las notas en la lista de notas.
+     */
+    private void cargarNotas2() {
+        UsersDatabase db = new UsersDatabase(VistaNotas.this);
+        listaObjetos.clear();
+        listaObjetos.addAll(db.obtenerNotasUID(UID));
+        recyclerView.setLayoutManager(staggeredGridLayoutManager);
+        adapter.notifyDataSetChanged();
+    }
+
     public void iniciar() {
         File file = new File(getFilesDir().getAbsolutePath() +
                 "/" + UID + "/Estructuras", "structures.json");
@@ -285,16 +298,74 @@ public class VistaNotas extends AppCompatActivity implements View.OnClickListene
                 }).create().show();
     }
 
-    /**
-     * Carga todas las notas en la lista de notas.
-     */
-    private void cargarNotas2() {
-        UsersDatabase db = new UsersDatabase(VistaNotas.this);
-        listaObjetos.clear();
-        listaObjetos.addAll(db.obtenerNotasUID(UID));
-        recyclerView.setLayoutManager(staggeredGridLayoutManager);
-        adapter.notifyDataSetChanged();
+    private void swipeNota(RecyclerView.ViewHolder viewHolder) {
+        final int swipedPosition = viewHolder.getAdapterPosition();
+        final UsersDatabase db = new UsersDatabase(VistaNotas.this);
+        final Nota notaBorrada = (Nota) listaObjetos.get(swipedPosition);
+        db.borrarNotaUID(notaBorrada.getIdNota());
+        db.close();
+        stackNotas.push(notaBorrada);
+        final int posicionNota = listaObjetos.indexOf(notaBorrada);
+        listaObjetos.remove(swipedPosition);
+        adapter.notifyItemRemoved(swipedPosition);
+        //snackbar = null;
+        snackbarNota = Snackbar.make(findViewById(R.id.ConstraintLayout), "Nota borrada", 5000).
+                setAction("Deshacer", new View.OnClickListener() {
+                    @Override
+                    public void onClick(View v) {
+                        Nota nota = stackNotas.pop();
+                        UsersDatabase db1 = new UsersDatabase(VistaNotas.this);
+                        db1.guardarNotaUID(UID, nota.getTitulo(), nota.getLetras());
+                        listaObjetos.add(posicionNota, nota);
+                        adapter.notifyItemInserted(swipedPosition);
+                    }
+                });
+        snackbarNota.addCallback(new Snackbar.Callback() {
+            @Override
+            public void onDismissed(Snackbar transientBottomBar, int event) {
+                fab.setY(fab.getY() + 110);
+            }
+        });
+        snackbarNota.show();
+        fab.setY(fab.getY() - 110);
     }
+    private void crearDirectorioEstructuras() {
+        File file = new File(getFilesDir().getAbsolutePath() + "/" + UID, "Estructuras");
+        System.out.println("Ruta a la carpeta Estructuras: " + file.getAbsolutePath());
+        if (!file.exists()) {
+            boolean seCreo = file.mkdir();
+            if (seCreo) {
+                System.out.println("Se creo la carpeta Estructuras");
+                InputStream is =  getResources().openRawResource(R.raw.structures);
+                BufferedReader br = new BufferedReader(new InputStreamReader(is));
+                StringBuilder sb = new StringBuilder();
+                String resultado = null;
+                String line = null;
+                try {
+                    while ((line = br.readLine()) != null) {
+                        sb.append(line + "\n");
+                    }
+                    resultado = sb.toString();
+                    JSONObject jsonObject = new JSONObject(resultado);
+                    File archivoJson = new File(file, "structures.json");
+                    if (!archivoJson.exists()) {
+                        boolean seCreoJson = archivoJson.createNewFile();
+                        if (seCreoJson) {
+                            System.out.println("SE CREO EL .JSON!!!");
+                            Writer output = new BufferedWriter(new FileWriter(archivoJson));
+                            output.write(jsonObject.toString());
+                            output.close();
+                        }
+                    }
+
+                } catch (IOException |JSONException ioe) {
+                    ioe.printStackTrace();
+                }
+            }
+        }
+    }
+
+    // Audios
 
     public void setUpLayoutGrabaciones() {
         if (snackbarNota != null) {
@@ -311,21 +382,6 @@ public class VistaNotas extends AppCompatActivity implements View.OnClickListene
 
     }
 
-    private ServiceConnection serviceConnection = new ServiceConnection() {
-        @Override
-        public void onServiceConnected(ComponentName name, IBinder service) {
-            // We've bound to LocalService, cast the IBinder and get LocalService instance
-            MediaPlayerService.LocalBinder binder = (MediaPlayerService.LocalBinder) service;
-            player = binder.getService();
-            serviceBound = true;
-        }
-
-        @Override
-        public void onServiceDisconnected(ComponentName name) {
-            serviceBound = false;
-        }
-    };
-
     private void createAudioDir() {
         File folder = new File(getFilesDir().getPath(), UID + "/Grabaciones");
         System.out.println("Directorio de audios: " + folder.getAbsolutePath());
@@ -340,7 +396,6 @@ public class VistaNotas extends AppCompatActivity implements View.OnClickListene
             }
         }
     }
-
     private void cargarAudios() {
 
         File file = new File(getFilesDir().getPath(), UID );
@@ -359,7 +414,6 @@ public class VistaNotas extends AppCompatActivity implements View.OnClickListene
             Date date = new Date(Long.parseLong(fecha));
             fecha = sdf.format(date);
             System.out.println("Nombre del archivo: " + audioFile.getName());
-            //audioFile.getName().substring(0, audioFile.getName().length() - 4))
             listaObjetos.add(new Audio(archivos[i].getAbsolutePath(), titulo, fecha));
             audioFiles.add(audioFile);
 
@@ -381,7 +435,6 @@ public class VistaNotas extends AppCompatActivity implements View.OnClickListene
                 Audio audio = (Audio) o;
                 audioList.add(audio);
             }
-            //Store Serializable audioList to SharedPreferences
             StorageUtil storage = new StorageUtil(getApplicationContext());
             storage.storeAudio(audioList);
             storage.storeAudioIndex(audioIndex);
@@ -391,12 +444,9 @@ public class VistaNotas extends AppCompatActivity implements View.OnClickListene
             bindService(playerIntent, serviceConnection, Context.BIND_AUTO_CREATE);
         } else {
             System.out.println("Audio index desde playAudio: " + audioIndex);
-            //Store the new audioIndex to SharedPreferences
             StorageUtil storage = new StorageUtil(getApplicationContext());
             storage.storeAudioIndex(audioIndex);
 
-            //Service is active
-            //Send a broadcast to the service -> PLAY_NEW_AUDIO
             Intent broadcastIntent = new Intent(Broadcast_PLAY_NEW_AUDIO);
             sendBroadcast(broadcastIntent);
         }
@@ -413,6 +463,86 @@ public class VistaNotas extends AppCompatActivity implements View.OnClickListene
         }
     }
 
+    private void swipeAudio(RecyclerView.ViewHolder viewHolder) {
+        final int swipedPosition = viewHolder.getAdapterPosition();
+        audioABorrar = null;
+        audioABorrar = audioFiles.get(swipedPosition);
+        final Audio audio1 = (Audio) listaObjetos.get(swipedPosition);
+        listaObjetos.remove(audio1);
+        adapter.notifyItemRemoved(swipedPosition);
+        snackbarAudio = Snackbar.make(findViewById(R.id.ConstraintLayout), "Grabación borrada", 5000).setAction("Deshacer", new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                listaObjetos.add(swipedPosition, audio1);
+                adapter.notifyItemInserted(swipedPosition);
+            }
+        });
+        snackbarAudio.addCallback(new Snackbar.Callback() {
+            @Override
+            public void onShown(Snackbar sb) {
+                super.onShown(sb);
+            }
+
+            @Override
+            public void onDismissed(Snackbar transientBottomBar, int event) {
+                if (event == Snackbar.Callback.DISMISS_EVENT_TIMEOUT) {
+                    isSnackbarAudioShowed = false;
+                    borrarAudio(audioABorrar);
+                }
+                fab.setY(fab.getY() + 80);
+            }
+        });
+        snackbarAudio.show();
+        isSnackbarAudioShowed = true;
+        fab.setY(fab.getY() - 80);
+    }
+
+    public void borrarAudio(File file) {
+        System.out.println("Nombre del audio a borrar: " + file.getName());
+        boolean seBorro = file.delete();
+        if (seBorro) {
+            System.out.println("El archivo se borró correctamente");
+        } else {
+            System.out.println("No se borró");
+        }
+    }
+
+
+
+
+    private void inicializarMediaRecorder() {
+        if (myAudioRecorder == null) {
+            myAudioRecorder = new MediaRecorder();
+            myAudioRecorder.setAudioSource(MediaRecorder.AudioSource.MIC);
+            myAudioRecorder.setOutputFormat(MediaRecorder.OutputFormat.THREE_GPP);
+            myAudioRecorder.setAudioEncoder(MediaRecorder.OutputFormat.AMR_NB);
+        }
+    }
+
+    // Servicio y broadcasts
+
+    private ServiceConnection serviceConnection = new ServiceConnection() {
+        @Override
+        public void onServiceConnected(ComponentName name, IBinder service) {
+            // We've bound to LocalService, cast the IBinder and get LocalService instance
+            MediaPlayerService.LocalBinder binder = (MediaPlayerService.LocalBinder) service;
+            player = binder.getService();
+            serviceBound = true;
+        }
+
+        @Override
+        public void onServiceDisconnected(ComponentName name) {
+            serviceBound = false;
+        }
+    };
+
+    private void register_finishedAudio() {
+        IntentFilter filter = new IntentFilter(MediaPlayerService.Broadcast_FINISHED_AUDIO);
+        registerReceiver(audioFinished, filter);
+    }
+
+
+    // Permisos
     private void checkPermission() {
 
         if (ContextCompat.checkSelfPermission(VistaNotas.this, Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
@@ -473,6 +603,7 @@ public class VistaNotas extends AppCompatActivity implements View.OnClickListene
 
     }
 
+    // Listener del floating action button
     @Override
     public void onClick(View v) {
         if (layoutNotas) {
@@ -491,7 +622,7 @@ public class VistaNotas extends AppCompatActivity implements View.OnClickListene
             input.setInputType(InputType.TYPE_CLASS_TEXT);
             input.setHint("Escribe un título");
             builder.setView(input);
-            builder.setPositiveButton("Guardar", new DialogInterface.OnClickListener() {
+            builder.setPositiveButton("Grabar", new DialogInterface.OnClickListener() {
                 @Override
                 public void onClick(DialogInterface dialog, int which) {
                     String titulo = input.getText().toString();
@@ -547,16 +678,9 @@ public class VistaNotas extends AppCompatActivity implements View.OnClickListene
         }
     };
 
-    private void register_finishedAudio() {
-        IntentFilter filter = new IntentFilter(MediaPlayerService.Broadcast_FINISHED_AUDIO);
-        registerReceiver(audioFinished, filter);
-    }
 
-    @Override
-    public void onRowClicked(int position) {
 
-    }
-
+    // Listener de la interfaz RecyclerViewClickListener
     @Override
     public void onViewClicked(View v, int position) {
         if (v.getId() == R.id.imgPlayStop) {
@@ -585,139 +709,6 @@ public class VistaNotas extends AppCompatActivity implements View.OnClickListene
                 reproduciendoAudio = false;
             }
 
-        }
-    }
-
-    @Override
-    public void onLongClick(View v, int position) {
-        if (layoutNotas) {
-            Nota notaPulsada = (Nota) listaObjetos.get(position);
-            Toast.makeText(VistaNotas.this, notaPulsada.getTitulo(), Toast.LENGTH_LONG).show();
-        } else if (layoutAudios) {
-            Audio audio = (Audio) listaObjetos.get(position);
-            Toast.makeText(VistaNotas.this, audio.getTitle(), Toast.LENGTH_LONG).show();
-        }
-    }
-
-    private void swipeNota(RecyclerView.ViewHolder viewHolder) {
-        final int swipedPosition = viewHolder.getAdapterPosition();
-        final UsersDatabase db = new UsersDatabase(VistaNotas.this);
-        final Nota notaBorrada = (Nota) listaObjetos.get(swipedPosition);
-        db.borrarNotaUID(notaBorrada.getIdNota());
-        db.close();
-        stackNotas.push(notaBorrada);
-        final int posicionNota = listaObjetos.indexOf(notaBorrada);
-        listaObjetos.remove(swipedPosition);
-        adapter.notifyItemRemoved(swipedPosition);
-        //snackbar = null;
-        snackbarNota = Snackbar.make(findViewById(R.id.ConstraintLayout), "Nota borrada", 5000).
-                setAction("Deshacer", new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                Nota nota = stackNotas.pop();
-                UsersDatabase db1 = new UsersDatabase(VistaNotas.this);
-                db1.guardarNotaUID(UID, nota.getTitulo(), nota.getLetras());
-                listaObjetos.add(posicionNota, nota);
-                adapter.notifyItemInserted(swipedPosition);
-            }
-        });
-        snackbarNota.addCallback(new Snackbar.Callback() {
-            @Override
-            public void onDismissed(Snackbar transientBottomBar, int event) {
-                fab.setY(fab.getY() + 110);
-            }
-        });
-        snackbarNota.show();
-        fab.setY(fab.getY() - 110);
-    }
-
-    private void swipeAudio(RecyclerView.ViewHolder viewHolder) {
-        final int swipedPosition = viewHolder.getAdapterPosition();
-        audioABorrar = null;
-        audioABorrar = audioFiles.get(swipedPosition);
-        final Audio audio1 = (Audio) listaObjetos.get(swipedPosition);
-        listaObjetos.remove(audio1);
-        adapter.notifyItemRemoved(swipedPosition);
-        snackbarAudio = Snackbar.make(findViewById(R.id.ConstraintLayout), "Grabación borrada", 5000).setAction("Deshacer", new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                listaObjetos.add(swipedPosition, audio1);
-                adapter.notifyItemInserted(swipedPosition);
-            }
-        });
-        snackbarAudio.addCallback(new Snackbar.Callback() {
-            @Override
-            public void onShown(Snackbar sb) {
-                super.onShown(sb);
-            }
-
-            @Override
-            public void onDismissed(Snackbar transientBottomBar, int event) {
-                if (event == Snackbar.Callback.DISMISS_EVENT_TIMEOUT) {
-                    isSnackbarAudioShowed = false;
-                    borrarAudio(audioABorrar);
-                }
-                fab.setY(fab.getY() + 80);
-            }
-        });
-        snackbarAudio.show();
-        isSnackbarAudioShowed = true;
-        fab.setY(fab.getY() - 80);
-    }
-
-    public void borrarAudio(File file) {
-        System.out.println("Nombre del audio a borrar: " + file.getName());
-        boolean seBorro = file.delete();
-        if (seBorro) {
-            System.out.println("El archivo se borró correctamente");
-        } else {
-            System.out.println("No se borró");
-        }
-    }
-
-
-    private void crearDirectorioEstructuras() {
-        File file = new File(getFilesDir().getAbsolutePath() + "/" + UID, "Estructuras");
-        System.out.println("Ruta a la carpeta Estructuras: " + file.getAbsolutePath());
-        if (!file.exists()) {
-            boolean seCreo = file.mkdir();
-            if (seCreo) {
-                System.out.println("Se creo la carpeta Estructuras");
-                InputStream is =  getResources().openRawResource(R.raw.structures);
-                BufferedReader br = new BufferedReader(new InputStreamReader(is));
-                StringBuilder sb = new StringBuilder();
-                String resultado = null;
-                String line = null;
-                try {
-                    while ((line = br.readLine()) != null) {
-                        sb.append(line + "\n");
-                    }
-                    resultado = sb.toString();
-                    JSONObject jsonObject = new JSONObject(resultado);
-                    File archivoJson = new File(file, "structures.json");
-                    if (!archivoJson.exists()) {
-                        boolean seCreoJson = archivoJson.createNewFile();
-                        if (seCreoJson) {
-                            System.out.println("SE CREO EL .JSON!!!");
-                            Writer output = new BufferedWriter(new FileWriter(archivoJson));
-                            output.write(jsonObject.toString());
-                            output.close();
-                        }
-                    }
-
-                } catch (IOException |JSONException ioe) {
-                    ioe.printStackTrace();
-                }
-            }
-        }
-    }
-
-    private void inicializarMediaRecorder() {
-        if (myAudioRecorder == null) {
-            myAudioRecorder = new MediaRecorder();
-            myAudioRecorder.setAudioSource(MediaRecorder.AudioSource.MIC);
-            myAudioRecorder.setOutputFormat(MediaRecorder.OutputFormat.THREE_GPP);
-            myAudioRecorder.setAudioEncoder(MediaRecorder.OutputFormat.AMR_NB);
         }
     }
 }

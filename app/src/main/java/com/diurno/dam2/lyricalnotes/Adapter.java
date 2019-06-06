@@ -83,8 +83,6 @@ public class Adapter extends RecyclerView.Adapter<RecyclerView.ViewHolder>  {
         Nota nota = (Nota) listaObjetos.get(position);
         String tituloNota = nota.getTitulo();
         String contenidoNota = nota.getLetras();
-        //System.out.println("Titulo de la nota cuando se le asigna a la tarjeta: " + tituloNota);
-        //System.out.println("Contenido de la nota cuando se le asigna a la tarjeta: " + contenidoNota);
         final int idNota = nota.getIdNota();
         notaViewHolder.txtTitulo.setText(tituloNota);
         notaViewHolder.txtContenido.setText(contenidoNota);
@@ -94,8 +92,6 @@ public class Adapter extends RecyclerView.Adapter<RecyclerView.ViewHolder>  {
             public void onClick(View v) {
                 String titulo = notaViewHolder.txtTitulo.getText().toString();
                 String contenido = notaViewHolder.txtContenido.getText().toString();
-                //System.out.println("Título de la nota al pulsar cardView: " + titulo);
-                //System.out.println("Contenido de la nota al pulsar cardView: " + contenido);
                 Intent intent = new Intent(context, CrearNota.class);
                 intent.putExtra("idNota", idNota);
                 intent.putExtra("Titulo", titulo);
@@ -123,17 +119,6 @@ public class Adapter extends RecyclerView.Adapter<RecyclerView.ViewHolder>  {
             txtTitulo = itemView.findViewById(R.id.titulo);
             txtContenido = itemView.findViewById(R.id.contenido);
             layout = itemView.findViewById(R.id.card_view);
-
-            layout.setOnLongClickListener(new View.OnLongClickListener() {
-                @Override
-                public boolean onLongClick(View v) {
-                    if (recyclerViewClickListener != null) {
-                        recyclerViewClickListener.onLongClick(v, getAdapterPosition());
-                        return true;
-                    }
-                    return false;
-                }
-            });
         }
 
 
@@ -156,17 +141,6 @@ public class Adapter extends RecyclerView.Adapter<RecyclerView.ViewHolder>  {
                     if (recyclerViewClickListener != null) {
                         recyclerViewClickListener.onViewClicked(v, getAdapterPosition());
                     }
-                }
-            });
-
-            cardView.setOnLongClickListener(new View.OnLongClickListener() {
-                @Override
-                public boolean onLongClick(View v) {
-                    if (recyclerViewClickListener != null) {
-                        recyclerViewClickListener.onLongClick(v, getAdapterPosition());
-                        return true;
-                    }
-                    return false;
                 }
             });
         }

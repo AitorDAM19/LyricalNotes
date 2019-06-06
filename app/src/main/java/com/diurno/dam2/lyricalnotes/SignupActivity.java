@@ -53,21 +53,6 @@ public class SignupActivity extends AppCompatActivity {
                 }
                 else {
                     etxtPassSignup.setError(null);
-                    //etxtPassSignup.requestFocus(View.FOCUS_DOWN, null);
-                    /*UsersDatabase bd = new UsersDatabase(SignupActivity.this);
-                    if (!bd.existeUsuario(email)) {
-                        bd.guardarUsuario(email, pass);
-                        bd.close();
-                        Toast.makeText(SignupActivity.this, "Usuario registrado", Toast.LENGTH_LONG).show();
-                        Intent intent = new Intent(SignupActivity.this, MainActivity.class);
-                        intent.putExtra("email", email);
-                        intent.putExtra("pass", pass);
-                        setResult(RESULT_OK, intent);
-                        finish();
-                    }
-                    else {
-                        Toast.makeText(SignupActivity.this, "Ya existe un usuario con ese nombre.", Toast.LENGTH_LONG).show();
-                    }*/
                     showProgressDialog();
                     auth.createUserWithEmailAndPassword(email, pass).addOnCompleteListener(SignupActivity.this, new OnCompleteListener<AuthResult>() {
                         @Override
@@ -82,8 +67,6 @@ public class SignupActivity extends AppCompatActivity {
                                     bd.close();
                                     Toast.makeText(SignupActivity.this, "Usuario registrado", Toast.LENGTH_LONG).show();
                                     Intent intent = new Intent(SignupActivity.this, MainActivity.class);
-                                    //intent.putExtra("email", email);
-                                    //intent.putExtra("pass", pass);
                                     intent.putExtra("uid", UID);
                                     setResult(RESULT_OK, intent);
                                     finish();
@@ -103,8 +86,6 @@ public class SignupActivity extends AppCompatActivity {
         txtHasAccount.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                //Intent intent = new Intent(SignupActivity.this, MainActivity.class);
-                //startActivity(intent);
                 finish();
             }
         });

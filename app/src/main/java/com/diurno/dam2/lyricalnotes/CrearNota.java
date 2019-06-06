@@ -105,7 +105,15 @@ public class CrearNota extends AppCompatActivity {
      */
     public void editar() {
         UsersDatabase db = new UsersDatabase(CrearNota.this);
-        db.actualizarNota(idNota, etxtTitulo.getText().toString(), etxtContenido.getText().toString());
+        String titulo =  etxtTitulo.getText().toString();
+        String contenido = etxtContenido.getText().toString();
+        if (contenido.isEmpty() && titulo.isEmpty()) {
+            Toast.makeText(this, "No puedes crear una nota vacía", Toast.LENGTH_SHORT).show();
+            return;
+        } else if (titulo.isEmpty()) {
+            titulo = "Sin título";
+        }
+        db.actualizarNota(idNota, titulo, contenido);
         Toast.makeText(this, "Nota editada.", Toast.LENGTH_SHORT).show();
         finish();
     }
