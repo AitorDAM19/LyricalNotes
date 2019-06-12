@@ -657,12 +657,12 @@ public class VistaNotas extends AppCompatActivity implements View.OnClickListene
                     isSnackbarAudioShowed = false;
                     borrarAudio(audioABorrar);
                 }
-                fab.setY(fab.getY() + 80);
+                fab.setY(fab.getY() + 110);
             }
         });
         snackbarAudio.show();
         isSnackbarAudioShowed = true;
-        fab.setY(fab.getY() - 80);
+        fab.setY(fab.getY() - 110);
     }
 
     public void borrarAudio(File file) {
