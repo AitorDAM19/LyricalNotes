@@ -94,7 +94,6 @@ public class CrearNota extends AppCompatActivity {
         } else if (titulo.isEmpty()) {
             titulo = "Sin título";
         }
-        //db.guardarNota(idUsuario,titulo, contenido);
         db.guardarNotaUID(UID, titulo, contenido);
         Toast.makeText(this, "Nota guardada.", Toast.LENGTH_SHORT).show();
         finish();
@@ -104,7 +103,6 @@ public class CrearNota extends AppCompatActivity {
      * Edita la nota
      */
     public void editar() {
-        UsersDatabase db = new UsersDatabase(CrearNota.this);
         String titulo =  etxtTitulo.getText().toString();
         String contenido = etxtContenido.getText().toString();
         if (contenido.isEmpty() && titulo.isEmpty()) {
@@ -113,6 +111,7 @@ public class CrearNota extends AppCompatActivity {
         } else if (titulo.isEmpty()) {
             titulo = "Sin título";
         }
+        UsersDatabase db = new UsersDatabase(CrearNota.this);
         db.actualizarNota(idNota, titulo, contenido);
         Toast.makeText(this, "Nota editada.", Toast.LENGTH_SHORT).show();
         finish();

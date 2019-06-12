@@ -123,4 +123,8 @@ public class MainActivity extends AppCompatActivity {
             mProgressDialog.dismiss();
         }
     }
+
+    public static boolean hayDatosIntroducidos(String email, String pass) {
+        return !email.isEmpty() && !pass.isEmpty();
+    }
 }
