@@ -11,18 +11,18 @@
         android:roundIcon="@mipmap/app_logo_round"
         android:supportsRtl="true"
         android:theme="@style/AppTheme">
-        <activity android:name=".MainActivity" android:theme="@style/LoginAndSignup">
+        <activity android:name=".MainActivity" android:theme="@style/LoginAndSignup" android:screenOrientation="portrait">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-        <activity android:name=".VistaNotas">
+        <activity android:name=".VistaNotas" android:screenOrientation="portrait">
 
         </activity>
-        <activity android:name=".CrearNota"/>
-        <activity android:name=".SignupActivity" android:theme="@style/LoginAndSignup"/>
+        <activity android:name=".CrearNota" android:screenOrientation="portrait"/>
+        <activity android:name=".SignupActivity" android:theme="@style/LoginAndSignup" android:screenOrientation="portrait"/>
         <service android:name=".MediaPlayerService" />
     </application>
 
